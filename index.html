@@ -8,7 +8,15 @@
 <body>
     
      <div id="app">
-   
+    <h1 v-text="heading"></h1>
+        <div v-for=" lesson in lessons">
+            <p> Subject : {{lesson.subject}}</p>
+            <p>Location : {{lesson.location}}</p>
+            <p>Availability : {{lesson.availability}}</p>
+            <p>Price : {{lesson.price}}</p>
+            <img :src="lesson.image" :alt="lesson.altText" width="300">
+
+        </div>
     </div>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script>
@@ -17,6 +25,37 @@
         const myApp = createApp({
           data(){
            return{
+            heading : "AfterSchool",
+            displayCart : false,
+            lessons:[
+                {
+                    id: 1,
+                    availability: 5,
+                    subject: "Computer Science",
+                    location: "Hendon",
+                    price: 100,
+                    image: "./images/computer.jpg",
+                    altText: "Computer Science lesson"
+                },
+                {
+                    id: 2,
+                    availability: 5,
+                    subject: "Music",
+                    location: "Camden",
+                    price: 80,
+                    image: "./images/music.jpg",
+                    altText: "Music lesson"
+                },
+                {
+                    id: 3,
+                    availability: 5,
+                    subject: "Mathematics",
+                    location: "Finchley",
+                    price: 90,
+                    image: "./images/maths.jpg",
+                    altText: "Mathematics lesson"
+                }
+            ]
 
            
            }  
