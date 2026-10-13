@@ -9,14 +9,36 @@
 
 <body>
     <div id="app">
-        <h1 v-text="heading"></h1>
-        <button v-bind:disabled="numberOfItems === 0" v-on:click="toggleCart()">
-            Checkout ({{ numberOfItems }})
-        </button>
+        <header>
+            <h1 v-text="heading"></h1>
+            <button v-bind:disabled="numberOfItems === 0" v-on:click="toggleCart()">
+                Checkout ({{ numberOfItems }})
+            </button>
+        </header>
+        <!-- Sorting Begins -->
+         <p>Sort by 
+            <button
+                v-for="attribute in sortAttributes" 
+                v-on:click="sortAttribute = attribute.value"
+            >
+            {{ attribute.label }}
+            </button>
+        </p>
+       
+        <p>Order 
+            <button
+                v-for="order in sortOrders"
+                v-on:click="sortOrder = order.value"
+            >
+                {{ order.label }}
+            </button>
+        </p>
+
+        <!-- Sorting Ends here -->
 
         <div v-if="!displayCart">
             <!-- lessons -->
-            <div v-for=" lesson in lessons">
+            <div v-for=" lesson in sortedLessons">
                 <p>Subject : {{lesson.subject}}</p>
                 <p>Location : {{lesson.location}}</p>
                 <p>Availability : {{lesson.availability}}</p>
@@ -52,6 +74,37 @@
                 return {
                     heading: "AfterSchool",
                     displayCart: false,
+                    sortAttribute: "subject",
+                    sortOrder: "ascending",
+                    sortAttributes: [
+                            {
+                                label: "Subject",
+                                value: "subject"
+                            },
+                            {
+                                label: "Location",
+                                value: "location"
+                            },
+                            {
+                                label: "Price",
+                                value: "price"
+                            },
+                            {
+                                label: "Spaces",
+                                value: "availability"
+                            }
+                        ],
+                    sortOrders: [
+                        {
+                            label: "↑ A-Z",
+                            value: "ascending"
+                        },
+                        {
+                            label: "↓ Z-A",
+                            value: "descending"
+                        }
+                    ],
+                    sortTeachers: [],
                     lessons: [
                         {
                             id: 1,
@@ -88,6 +141,32 @@
                 numberOfItems() {
                     return this.cart.length;
                 },
+
+                sortedLessons() {
+                    let attribute = this.sortAttribute
+
+                    if (this.sortOrder === "ascending") {
+
+                        // THIS IS THE ASCENDING SORT
+                        function compare(a, b) {
+                            if (a[attribute] > b[attribute]) return 1;
+                            if (a[attribute] < b[attribute]) return -1;
+                            return 0;
+                        }
+                        return this.lessons.sort(compare)
+                    }
+                    else {
+
+                        // THIS IS THE DESCENDING SORT
+                        function compare(a, b) {
+                            if (a[attribute] < b[attribute]) return 1;
+                            if (a[attribute] > b[attribute]) return -1;
+                            return 0;
+                        }
+                        return this.lessons.sort(compare)
+                    }
+
+                }
             },
             methods: {
                 addToCart(lesson) {
@@ -115,8 +194,11 @@
 
                     return count;
                 },
+
+
             },
-        });
+        }
+      );
         myApp.mount("#app");
     </script>
 </body>
