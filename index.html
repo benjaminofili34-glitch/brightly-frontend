@@ -23,73 +23,110 @@
                 Checkout ({{ numberOfItems }})
             </button>
         </header>
-        <!-- Sorting Begins -->
-        <!-- TOOLBAR: two segmented controls (.seg), both generated with v-for from data().
-             The selected button is marked with aria-pressed="true"; styles.css turns that
-             into the terracotta "selected" look, so no extra class logic is needed. -->
-        <div class="toolbar">
-         <!-- Sort by: Subject | Location | Price | Spaces (sets sortAttribute) -->
-         <p class="sort-group">Sort by <span class="seg">
-            <button
-                v-for="attribute in sortAttributes" 
-                v-on:click="sortAttribute = attribute.value"
-                :aria-pressed="sortAttribute === attribute.value"
-            >
-            {{ attribute.label }}
-            </button>
-         </span>
-        </p>
-       
-        <!-- Order: ascending | descending (sets sortOrder) -->
-        <p class="sort-group">Order <span class="seg">
-            <button
-                v-for="order in sortOrders"
-                v-on:click="sortOrder = order.value"
-                :aria-pressed="sortOrder === order.value"
-            >
-                {{ order.label }}
-            </button>
-         </span>
-        </p>
-        </div>
-
-        <!-- Sorting Ends here -->
-
-        <!-- VIEW 1 - CATALOGUE (shown while displayCart is false): a responsive grid of lesson cards.
-             The matching v-else block (the checkout view) must stay directly after this block. -->
-        <div v-if="!displayCart" class="catalogue">
-            <!-- lessons -->
-            <!-- One card per lesson, in the order given by the sortedLessons computed property.
-                 - class is-low  : exactly 1 space left  (terracotta meter and text)
-                 - class is-full : 0 spaces left         (grey, dimmed image)
-                 - --spaces      : CSS variable read by styles.css to fill the 5-pill spaces meter -->
-            <div v-for=" lesson in sortedLessons" class="lesson-card"
-                :class="{ 'is-low': lesson.availability === 1, 'is-full': lesson.availability <= 0 }"
-                :style="{ '--spaces': lesson.availability }">
-                <!-- The <span class="label"> text is visually hidden (kept for screen readers);
-                     styles.css shows the value only, plus a pin icon / "spaces left" text. -->
-                <p class="lesson-subject"><span class="label">Subject :</span> {{lesson.subject}}</p>
-                <p class="lesson-location"><span class="label">Location :</span> {{lesson.location}}</p>
-                <p class="lesson-spaces"><span class="label">Availability :</span> {{lesson.availability}}</p>
-                <p class="lesson-price"><span class="label">Price :</span> £{{lesson.price}}</p>
-                <!-- Activity photo: CSS makes it fill the top of the card (4:3, rounded) -->
-                <img :src="lesson.image" :alt="lesson.altText" width="300" />
-                <!-- Adds one place to the cart; disabled once no spaces remain -->
-                <button v-on:click="addToCart(lesson)" v-bind:disabled="lesson.availability <= 0">
-                    Add to cart
+        
+        <!-- VIEWS: the sort toolbar and the catalogue share one v-if, so the toolbar only shows
+             in the catalogue. <template> adds no element to the page, so the CSS is unaffected.
+             The v-else (checkout view) must stay directly after this </template>. -->
+        <template v-if="!displayCart">
+            <!-- Sorting Begins -->
+            <!-- TOOLBAR: two segmented controls (.seg), both generated with v-for from data().
+                 The selected button is marked with aria-pressed="true"; styles.css turns that
+                 into the terracotta "selected" look, so no extra class logic is needed. -->
+            <div class="toolbar">
+             <!-- Sort by: Subject | Location | Price | Spaces (sets sortAttribute) -->
+             <p class="sort-group">Sort by <span class="seg">
+                <button
+                    v-for="attribute in sortAttributes" 
+                    v-on:click="sortAttribute = attribute.value"
+                    :aria-pressed="sortAttribute === attribute.value"
+                >
+                {{ attribute.label }}
                 </button>
+             </span>
+            </p>
+       
+            <!-- Order: ascending | descending (sets sortOrder) -->
+            <p class="sort-group">Order <span class="seg">
+                <button
+                    v-for="order in sortOrders"
+                    v-on:click="sortOrder = order.value"
+                    :aria-pressed="sortOrder === order.value"
+                >
+                    {{ order.label }}
+                </button>
+             </span>
+            </p>
             </div>
-        </div>
-        <div v-else class="cart-view">
-            <!-- VIEW 2 - CHECKOUT (shown while displayCart is true): one row per lesson in the cart.
-                 Quantities are grouped, so booking Music twice shows one row with "Quantity: 2". -->
-            <h2>Checkout</h2>
 
-            <!-- Loops over every lesson but only renders those with at least one place in the cart.
+            <!-- Sorting Ends here -->
+
+            <!-- VIEW 1 - CATALOGUE (shown while displayCart is false): a responsive grid of lesson cards.
+                 The matching v-else block (the checkout view) must stay directly after this block. -->
+            <div class="catalogue">
+                <!-- lessons -->
+                <!-- One card per lesson, in the order given by the sortedLessons computed property.
+                     - class is-low  : exactly 1 space left  (terracotta meter and text)
+                     - class is-full : 0 spaces left         (grey, dimmed image)
+                     - --spaces      : CSS variable read by styles.css to fill the 5-pill spaces meter -->
+                <div v-for=" lesson in sortedLessons" class="lesson-card"
+                    :class="{ 'is-low': lesson.availability === 1, 'is-full': lesson.availability <= 0 }"
+                    :style="{ '--spaces': lesson.availability }">
+                    <!-- The <span class="label"> text is visually hidden (kept for screen readers);
+                         styles.css shows the value only, plus a pin icon / "spaces left" text. -->
+                    <p class="lesson-subject"><span class="label">Subject :</span> {{lesson.subject}}</p>
+                    <p class="lesson-location"><span class="label">Location :</span> {{lesson.location}}</p>
+                    <p class="lesson-spaces"><span class="label">Availability :</span> {{lesson.availability}}</p>
+                    <p class="lesson-price"><span class="label">Price :</span> £{{lesson.price}}</p>
+                    <!-- Activity photo: CSS makes it fill the top of the card (4:3, rounded) -->
+                    <img :src="lesson.image" :alt="lesson.altText" width="300" />
+                    <!-- Adds one place to the cart; disabled once no spaces remain -->
+                    <button v-on:click="addToCart(lesson)" v-bind:disabled="lesson.availability <= 0">
+                        Add to cart
+                    </button>
+                </div>
+            </div>
+        </template>
+        
+        <div v-else class="cart-view">
+
+            <section v-if="orderSubmitted" class="order-success">
+                <h2>Order confirmed</h2>
+
+                <p>Your order has been submitted successfully.</p>
+
+                <button v-on:click="toggleCart()">
+                    Return to activities
+                </button>
+            </section>
+
+            <template v-else>
+
+                <h2>Checkout</h2>
+
+                <form v-on:submit="submitOrder">
+
+                    <label for="name">Full name</label>
+                    <input id="name" v-model="order.name">
+                    <p>Letters and spaces only</p>
+
+                    <label for="phone">Phone number</label>
+                    <input id="phone" v-model="order.phone">
+                    <p>Digits only</p>
+
+                    <button
+                        type="submit"
+                        v-bind:disabled="!validForm"
+                    >
+                        Place order
+                    </button>
+
+                </form>
+
+                 <!-- Loops over every lesson but only renders those with at least one place in the cart.
                  The outer v-for div is layout-neutral (display: contents in styles.css). -->
             <div v-for="lesson in lessons">
                 <div v-if="cartItemCount(lesson.id) > 0" class="cart-item">
-                    <hr />
+                    
 
                     <h4 v-text="lesson.subject"></h4>
 
@@ -100,6 +137,9 @@
                     <button v-on:click="removeFromCart(lesson)">Remove</button>
                 </div>
             </div>
+
+            </template>
+
         </div>
     </div>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -180,6 +220,11 @@
                     // The cart is a flat list of lesson ids, one entry per place booked
                     // (e.g. [2, 2, 3] = two places on lesson 2 and one on lesson 3)
                     cart: [],
+                    order: {
+                        name: "",
+                        phone: ""
+                    },
+                    orderSubmitted : false,
                 };
             },
             // computed: values derived from data(); Vue recalculates them automatically
@@ -215,12 +260,26 @@
                         return this.lessons.sort(compare)
                     }
 
+                },
+
+                validName(){
+                    return /^[A-Za-z ]+$/.test(this.order.name)
+                },
+
+                validPhone(){
+                    return /^[0-9]+$/.test(this.order.phone)
+                },
+
+                validForm(){
+                    return this.validName && this.validPhone
                 }
             },
+
             // methods: actions triggered from the template (clicks) or used inside it
             methods: {
                 // Add one place: record the lesson id in the cart and use up one space
                 addToCart(lesson) {
+                    this.orderSubmitted = false;
                     this.cart.push(lesson.id);
                     lesson.availability = lesson.availability - 1;
                 },
@@ -248,8 +307,14 @@
 
                     return count;
                 },
+                submitOrder(event){
+                    event.preventDefault()
 
-
+                    this.orderSubmitted = true
+                    this.cart = []
+                    this.order.name = ""
+                    this.order.phone = ""
+                }
             },
         }
       );

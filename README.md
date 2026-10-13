@@ -36,10 +36,12 @@ then visit <http://localhost:8765/index.html>.
 - **Add to cart** — adds one place and reduces the lesson's availability; disabled at 0 spaces
 - Header **Checkout (n)** button shows the cart count and toggles between catalogue and checkout view
 - **Checkout view** — places grouped by lesson with a quantity; **Remove** takes one place out and restores one space
-- **Sorting** — by Subject, Location, Price or Spaces, ascending or descending; both control groups are generated with `v-for`
+- **Sorting** — by Subject, Location, Price or Spaces, ascending or descending; both control groups are generated with `v-for`. The sort toolbar is shown in the catalogue only and is hidden in the checkout view
 - Responsive layout (card grid on desktop, single column on phones)
 
-**Not implemented yet** (planned separately): teacher filtering, search, enrolment/checkout form, backend.
+**In progress:** a name and phone form in the checkout view (see Known notes).
+
+**Not implemented yet** (planned separately): teacher filtering, search, completing an order, backend.
 
 ## How the Vue app works (`index.html`)
 
@@ -54,6 +56,7 @@ then visit <http://localhost:8765/index.html>.
 | `sortTeachers` | Reserved for the teacher filter (unused) |
 | `lessons` | The lesson list; `availability` changes as the cart changes |
 | `cart` | Flat list of lesson ids, one entry per place (`[2, 2, 3]` = two places on lesson 2, one on lesson 3) |
+| `order` | `{ name, phone }` for the checkout form (work in progress) |
 
 **`computed`** — `numberOfItems` (cart size), `sortedLessons` (lessons sorted by the current attribute and order)
 
@@ -75,7 +78,8 @@ Colours, fonts and icons are defined once as variables at the top of `styles.css
 
 ## Known notes
 
-- Opening the checkout view and removing the **last** item disables the header button (it is disabled when the cart is empty), so you cannot switch back to the catalogue without reloading. Existing behaviour, not caused by the styling.
+- The checkout form inputs are written `v.model="order.name"` / `v.model="order.phone"`. The directive is `v-model` (hyphen), so as written the inputs do not update `order` and the "Name entered" / "Phone entered" lines stay empty.
+- The checkout form is unstyled so far; it needs input and label styles in `styles.css`.
 - `sortedLessons` uses `Array.sort()`, which reorders `lessons` itself rather than a copy.
 - The disabled Add to cart button keeps the text "Add to cart" when a lesson is full (it is greyed out); showing "Fully booked" instead would need template logic.
 
@@ -83,4 +87,5 @@ Colours, fonts and icons are defined once as variables at the top of `styles.css
 
 | Date | Change |
 |---|---|
+| 2026-10-13 | Moved the sort toolbar inside the catalogue's `v-if` (wrapped with the catalogue in a `<template v-if="!displayCart">`), so it no longer shows in the checkout view. No CSS change. Synced the README with the checkout form in progress; the header button now re-enables in the checkout view so the user can always return to the catalogue. |
 | 2026-10-13 | Styled the frontend (new `styles.css`, minimal HTML wrapper/class/binding additions, Vue logic untouched). Added explanatory comments to `index.html` and `styles.css`. Added this README. |
