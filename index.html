@@ -5,55 +5,90 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AfterSchool-Booking System</title>
+    <link rel="stylesheet" href="./styles.css" />
 </head>
 
 <body>
+    <!-- Vue mounts onto #app (see the script at the bottom of this file) -->
     <div id="app">
+        <!-- HEADER: brand on the left, checkout button on the right.
+             The logo mark (two circles) is drawn in styles.css via .brand::before -->
         <header>
-            <h1 v-text="heading"></h1>
-            <button v-bind:disabled="numberOfItems === 0" v-on:click="toggleCart()">
+            <div class="brand">
+                <h1 v-text="heading"></h1>
+                <span class="brand-tagline">After-school classes &amp; activities</span>
+            </div>
+            <!-- Checkout button: disabled while the cart is empty; click swaps catalogue <-> checkout view -->
+            <button v-bind:disabled="numberOfItems === 0 && !displayCart" v-on:click="toggleCart()">
                 Checkout ({{ numberOfItems }})
             </button>
         </header>
         <!-- Sorting Begins -->
-         <p>Sort by 
+        <!-- TOOLBAR: two segmented controls (.seg), both generated with v-for from data().
+             The selected button is marked with aria-pressed="true"; styles.css turns that
+             into the terracotta "selected" look, so no extra class logic is needed. -->
+        <div class="toolbar">
+         <!-- Sort by: Subject | Location | Price | Spaces (sets sortAttribute) -->
+         <p class="sort-group">Sort by <span class="seg">
             <button
                 v-for="attribute in sortAttributes" 
                 v-on:click="sortAttribute = attribute.value"
+                :aria-pressed="sortAttribute === attribute.value"
             >
             {{ attribute.label }}
             </button>
+         </span>
         </p>
        
-        <p>Order 
+        <!-- Order: ascending | descending (sets sortOrder) -->
+        <p class="sort-group">Order <span class="seg">
             <button
                 v-for="order in sortOrders"
                 v-on:click="sortOrder = order.value"
+                :aria-pressed="sortOrder === order.value"
             >
                 {{ order.label }}
             </button>
+         </span>
         </p>
+        </div>
 
         <!-- Sorting Ends here -->
 
-        <div v-if="!displayCart">
+        <!-- VIEW 1 - CATALOGUE (shown while displayCart is false): a responsive grid of lesson cards.
+             The matching v-else block (the checkout view) must stay directly after this block. -->
+        <div v-if="!displayCart" class="catalogue">
             <!-- lessons -->
-            <div v-for=" lesson in sortedLessons">
-                <p>Subject : {{lesson.subject}}</p>
-                <p>Location : {{lesson.location}}</p>
-                <p>Availability : {{lesson.availability}}</p>
-                <p>Price : {{lesson.price}}</p>
+            <!-- One card per lesson, in the order given by the sortedLessons computed property.
+                 - class is-low  : exactly 1 space left  (terracotta meter and text)
+                 - class is-full : 0 spaces left         (grey, dimmed image)
+                 - --spaces      : CSS variable read by styles.css to fill the 5-pill spaces meter -->
+            <div v-for=" lesson in sortedLessons" class="lesson-card"
+                :class="{ 'is-low': lesson.availability === 1, 'is-full': lesson.availability <= 0 }"
+                :style="{ '--spaces': lesson.availability }">
+                <!-- The <span class="label"> text is visually hidden (kept for screen readers);
+                     styles.css shows the value only, plus a pin icon / "spaces left" text. -->
+                <p class="lesson-subject"><span class="label">Subject :</span> {{lesson.subject}}</p>
+                <p class="lesson-location"><span class="label">Location :</span> {{lesson.location}}</p>
+                <p class="lesson-spaces"><span class="label">Availability :</span> {{lesson.availability}}</p>
+                <p class="lesson-price"><span class="label">Price :</span> £{{lesson.price}}</p>
+                <!-- Activity photo: CSS makes it fill the top of the card (4:3, rounded) -->
                 <img :src="lesson.image" :alt="lesson.altText" width="300" />
+                <!-- Adds one place to the cart; disabled once no spaces remain -->
                 <button v-on:click="addToCart(lesson)" v-bind:disabled="lesson.availability <= 0">
                     Add to cart
                 </button>
             </div>
         </div>
-        <div v-else>
+        <div v-else class="cart-view">
+            <!-- VIEW 2 - CHECKOUT (shown while displayCart is true): one row per lesson in the cart.
+                 Quantities are grouped, so booking Music twice shows one row with "Quantity: 2". -->
             <h2>Checkout</h2>
 
+            <!-- Loops over every lesson but only renders those with at least one place in the cart.
+                 The outer v-for div is layout-neutral (display: contents in styles.css). -->
             <div v-for="lesson in lessons">
-                <div v-if="cartItemCount(lesson.id) > 0">
+                <div v-if="cartItemCount(lesson.id) > 0" class="cart-item">
                     <hr />
 
                     <h4 v-text="lesson.subject"></h4>
@@ -61,6 +96,7 @@
                     <p>Price: £{{ lesson.price }}</p>
 
                     <p>Quantity: {{ cartItemCount(lesson.id) }}</p>
+                    <!-- Removes one place and gives that space back to the lesson -->
                     <button v-on:click="removeFromCart(lesson)">Remove</button>
                 </div>
             </div>
@@ -68,14 +104,18 @@
     </div>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script>
+        // Vue 3 (CDN build) with the Options API: data / computed / methods.
         const { createApp } = Vue;
         const myApp = createApp({
+            // data(): all of the app's reactive state lives here
             data() {
                 return {
-                    heading: "AfterSchool",
-                    displayCart: false,
-                    sortAttribute: "subject",
-                    sortOrder: "ascending",
+                    heading: "AfterSchool",       // brand name shown in the header
+                    displayCart: false,           // false = catalogue view, true = checkout view
+                    sortAttribute: "subject",     // lesson property currently sorted on
+                    sortOrder: "ascending",       // "ascending" or "descending"
+                    // Options for the "Sort by" buttons (rendered with v-for).
+                    // label = text on the button, value = lesson property to sort by
                     sortAttributes: [
                             {
                                 label: "Subject",
@@ -94,6 +134,7 @@
                                 value: "availability"
                             }
                         ],
+                    // Options for the "Order" buttons (rendered with v-for)
                     sortOrders: [
                         {
                             label: "↑ A-Z",
@@ -104,7 +145,9 @@
                             value: "descending"
                         }
                     ],
-                    sortTeachers: [],
+                    sortTeachers: [],             // reserved for the teacher filter (not used yet)
+                    // The lesson catalogue. availability = spaces left (changes as items
+                    // are added to / removed from the cart); image paths are relative to index.html
                     lessons: [
                         {
                             id: 1,
@@ -134,14 +177,20 @@
                             altText: "Mathematics lesson",
                         },
                     ],
+                    // The cart is a flat list of lesson ids, one entry per place booked
+                    // (e.g. [2, 2, 3] = two places on lesson 2 and one on lesson 3)
                     cart: [],
                 };
             },
+            // computed: values derived from data(); Vue recalculates them automatically
             computed: {
+                // Total places in the cart; drives the "Checkout (n)" button
                 numberOfItems() {
                     return this.cart.length;
                 },
 
+                // Lessons ordered by sortAttribute / sortOrder; the catalogue v-for renders this.
+                // Note: Array.sort() reorders this.lessons itself rather than a copy.
                 sortedLessons() {
                     let attribute = this.sortAttribute
 
@@ -168,11 +217,14 @@
 
                 }
             },
+            // methods: actions triggered from the template (clicks) or used inside it
             methods: {
+                // Add one place: record the lesson id in the cart and use up one space
                 addToCart(lesson) {
                     this.cart.push(lesson.id);
                     lesson.availability = lesson.availability - 1;
                 },
+                // Remove one place: delete one matching id from the cart and give the space back
                 removeFromCart(lesson) {
                     let index = this.cart.indexOf(lesson.id);
                     if (index !== -1) {
@@ -180,9 +232,11 @@
                         lesson.availability = lesson.availability + 1;
                     }
                 },
+                // Switch between the catalogue view and the checkout view
                 toggleCart() {
                     this.displayCart = !this.displayCart;
                 },
+                // How many places of lesson `id` are in the cart (used to group quantities)
                 cartItemCount(id) {
                     let count = 0;
 
@@ -199,6 +253,7 @@
             },
         }
       );
+        // Attach the app to <div id="app"> in the page
         myApp.mount("#app");
     </script>
 </body>

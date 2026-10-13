@@ -1,0 +1,435 @@
+/* AfterSchool — styles matching the AfterClass ("Organic") design reference.
+   Pure CSS: no Vue logic lives here. Tokens are taken from the design system.
+
+   Contents
+     1. Design tokens (colours, fonts, icons)   :root
+     2. Base styles & shared helpers            body, .label, icon slot
+     3. Header                                  header, .brand
+     4. Sort toolbar                            .toolbar, .sort-group, .seg
+     5. Catalogue                               .catalogue, .lesson-card
+     6. Checkout / cart view                    .cart-view, .cart-item
+     7. Small screens                           @media (max-width: 640px)
+
+   Hooks the HTML provides (set by Vue bindings in index.html):
+     [aria-pressed="true"]  selected sort button
+     .is-low / .is-full     lesson has 1 / 0 spaces left
+     --spaces               number of spaces left, used to fill the meter */
+@import url('https://fonts.googleapis.com/css2?family=Caprasimo&family=Figtree:wght@400;600;700&display=swap');
+
+/* ── 1. Design tokens ─────────────────────────────────────────────────── */
+/* Change a colour here and it updates everywhere. Numbered steps (100-900)
+   run light → dark: light steps for tints, 600-700 for hover/pressed and text. */
+:root {
+  --color-bg: #f5ead8;            /* page background (cream) */
+  --color-surface: #ebddc5;       /* cards and the toolbar (sand) */
+  --color-text: #201e1d;
+  --color-accent: #c67139;        /* primary accent: terracotta */
+  --color-accent-2: #7a8a5e;      /* second accent: sage (availability) */
+  --color-divider: color-mix(in srgb, #201e1d 16%, transparent);
+
+  --color-neutral-100: #f9f4ed;
+  --color-neutral-400: #c0b6a5;
+  --color-neutral-500: #a19786;
+  --color-neutral-700: #645c50;
+  --color-neutral-800: #474238;
+
+  --color-accent-600: #b2622d;
+  --color-accent-700: #8c491a;
+  --color-accent-2-600: #728157;
+  --color-accent-2-800: #3d472b;
+
+  --font-heading: "Caprasimo", system-ui, sans-serif;
+  --font-body: "Figtree", system-ui, sans-serif;
+
+  --gutter: 40px;                 /* side margin of the page content (16px on phones) */
+
+  /* Icons are inline SVGs (Lucide, stroke 2.75) stored as CSS variables and used as
+     masks, so each icon takes on the text colour of whatever it sits in. */
+  --icon-bag: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z'/%3E%3Cpath d='M3 6h18'/%3E%3Cpath d='M16 10a4 4 0 0 1-8 0'/%3E%3C/svg%3E");
+  --icon-pin: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z'/%3E%3Ccircle cx='12' cy='10' r='3'/%3E%3C/svg%3E");
+  --icon-plus: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.75' stroke-linecap='round'%3E%3Cpath d='M5 12h14'/%3E%3Cpath d='M12 5v14'/%3E%3C/svg%3E");
+  --icon-trash: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 6h18'/%3E%3Cpath d='M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6'/%3E%3Cpath d='M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2'/%3E%3C/svg%3E");
+  /* One pill of the spaces meter: 16px wide, 6px tall, repeated every 20px */
+  --icon-pill: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='6'%3E%3Crect width='16' height='6' rx='3'/%3E%3C/svg%3E");
+}
+
+/* ── 2. Base styles & shared helpers ──────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+h1, h2, h3, h4 {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 400;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+}
+p { margin: 0; }
+img { display: block; max-width: 100%; }
+
+:focus { outline: none; }
+:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+::selection { background: color-mix(in srgb, var(--color-accent) 30%, transparent); }
+
+button { font: inherit; cursor: pointer; }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+/* Shared icon slot. Each element below sets --mask to one of the icon variables and
+   its own width/height; this block paints it as a coloured shape using currentColor. */
+header button::before,
+.lesson-location::before,
+.lesson-card > button::before,
+.cart-item button::before {
+  content: "";
+  flex: none;
+  background: currentColor;
+  -webkit-mask: var(--mask) center / contain no-repeat;
+  mask: var(--mask) center / contain no-repeat;
+}
+
+/* Visually hidden, still read by screen readers (the "Subject :" style labels) */
+.label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* ── 3. Header ────────────────────────────────────────────────────────── */
+/* Sticky bar: brand left, checkout button right (space-between, wraps on tiny screens) */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  padding: 18px var(--gutter);
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-divider);
+}
+
+/* Brand: two overlapping circles (terracotta + sage) beside the name */
+.brand {
+  display: grid;
+  grid-template-columns: 34px auto;
+  column-gap: 10px;
+  align-items: center;
+}
+.brand::before {
+  content: "";
+  grid-row: 1 / span 2;
+  width: 34px;
+  height: 34px;
+  background:
+    radial-gradient(circle at 25px 25px,
+      var(--color-accent-2) 0 6px, var(--color-bg) 6px 9px, transparent 9px),
+    radial-gradient(circle at 13px 13px,
+      var(--color-accent) 0 13px, transparent 13px);
+}
+.brand h1 { font-size: 22px; line-height: 1.05; letter-spacing: 0; }
+.brand-tagline {
+  margin-top: 3px;
+  font-size: 12px;
+  line-height: 1.05;
+  color: var(--color-neutral-700);
+}
+
+/* Checkout button = the design's cart pill. Terracotta when usable, an outlined
+   greyed-out pill while the cart is empty (:disabled, set by Vue). */
+header button {
+  --mask: var(--icon-bag);
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 0 22px;
+  font-family: var(--font-heading);
+  font-size: 15px;
+  line-height: 1.2;
+  color: var(--color-bg);
+  background: var(--color-accent);
+  border: 1px solid transparent;
+  border-radius: 999px;
+}
+header button::before { width: 18px; height: 18px; }
+header button:hover:not(:disabled) { background: var(--color-accent-600); }
+header button:active:not(:disabled) { background: var(--color-accent-700); }
+header button:disabled {
+  color: var(--color-text);
+  background: transparent;
+  border-color: var(--color-divider);
+}
+
+/* ── 4. Sort toolbar ──────────────────────────────────────────────────── */
+/* Toolbar, catalogue and checkout share one centred column (max 1240px + side gutters) */
+.toolbar,
+.catalogue,
+.cart-view {
+  width: calc(100% - 2 * var(--gutter));
+  max-width: 1240px;
+  margin-inline: auto;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 24px;
+  margin-top: 28px;
+  margin-bottom: 18px;
+  padding: 12px 14px 12px 22px;
+  background: var(--color-surface);
+  border-radius: 32px;
+}
+
+.sort-group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-neutral-800);
+}
+
+/* Segmented control: a pill holding joined buttons. The selected button is found
+   with [aria-pressed="true"] (bound in index.html), so no JavaScript class is needed. */
+.seg {
+  display: inline-flex;
+  overflow: hidden;
+  background: var(--color-bg);
+  border: 1px solid var(--color-divider);
+  border-radius: 999px;
+}
+.seg button {
+  padding: 8px 14px;
+  font: 600 14px/1.55 var(--font-body);
+  color: var(--color-text);
+  white-space: nowrap;
+  background: transparent;
+  border: 0;
+}
+.seg button + button { border-left: 1px solid var(--color-divider); }
+.seg button:hover:not([aria-pressed="true"]) {
+  background: color-mix(in srgb, var(--color-text) 7%, transparent);
+}
+.seg button[aria-pressed="true"] {
+  color: var(--color-bg);
+  background: var(--color-accent);
+}
+.seg button:focus-visible { outline-offset: -2px; }
+
+/* ── 5. Catalogue ─────────────────────────────────────────────────────── */
+/* Responsive grid: as many 250px+ columns as fit, cards stretch to share the row */
+.catalogue {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 22px;
+  margin-bottom: 80px;
+}
+
+/* Lesson card. The grid areas below place the children regardless of their order in
+   the HTML (that's how the <img>, which comes after the text there, appears on top):
+       [ photo                ]
+       [ subject       £price ]
+       [ location             ]
+       [ spaces meter + text  ]
+       [ add-to-cart button   ] */
+.lesson-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "img      img"
+    "subject  price"
+    "location location"
+    "spaces   spaces"
+    "action   action";
+  align-content: start;
+  gap: 10px 12px;
+  padding: 10px 10px 12px;
+  background: var(--color-surface);
+  border-radius: 32px;
+}
+.lesson-card > p { padding-inline: 8px; }
+
+.lesson-card > img {
+  grid-area: img;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  margin-bottom: 4px;
+  border-radius: 24px;
+}
+
+.lesson-subject {
+  grid-area: subject;
+  align-self: baseline;
+  font-family: var(--font-heading);
+  font-size: 22px;
+  line-height: 1.12;
+  letter-spacing: -0.015em;
+}
+.lesson-price {
+  grid-area: price;
+  align-self: baseline;
+  font-family: var(--font-heading);
+  font-size: 22px;
+  line-height: 1.12;
+  color: var(--color-accent-700);
+}
+
+.lesson-location {
+  --mask: var(--icon-pin);
+  grid-area: location;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--color-neutral-800);
+}
+.lesson-location::before { width: 15px; height: 15px; }
+
+/* Spaces: a 5-pill meter plus "N spaces left". Sage normally, terracotta at 1 space
+   (.is-low), grey at 0 (.is-full). How the meter works:
+     - the ::before bar is 96px wide = 5 pills of 16px with 4px gaps
+     - its background is split at (--spaces × 20px): --meter colour before, grey after
+     - the mask then cuts that bar into rounded pills
+   "spaces left" is added with ::after, since the HTML only contains the number. */
+.lesson-spaces {
+  --meter: var(--color-accent-2-600);
+  grid-area: spaces;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-accent-2-800);
+}
+.lesson-spaces::before {
+  content: "";
+  display: inline-block;
+  width: 96px;
+  height: 6px;
+  margin-right: 10px;
+  vertical-align: middle;
+  background: linear-gradient(90deg,
+    var(--meter) calc(var(--spaces, 0) * 20px), var(--color-neutral-400) 0);
+  -webkit-mask: var(--icon-pill) 0 0 / 20px 6px repeat-x;
+  mask: var(--icon-pill) 0 0 / 20px 6px repeat-x;
+}
+.lesson-spaces::after { content: " spaces left"; }
+
+.is-low .lesson-spaces { --meter: var(--color-accent); color: var(--color-accent-700); }
+.is-low .lesson-spaces::after { content: " space left"; }
+.is-full .lesson-spaces { color: var(--color-neutral-700); }
+.is-full > img { opacity: 0.5; }
+
+/* Add to cart */
+.lesson-card > button {
+  --mask: var(--icon-plus);
+  grid-area: action;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 46px;
+  margin-top: 2px;
+  padding: 0 22px;
+  font-family: var(--font-heading);
+  font-size: 15px;
+  line-height: 1.2;
+  color: var(--color-bg);
+  background: var(--color-accent);
+  border: 1px solid transparent;
+  border-radius: 999px;
+}
+.lesson-card > button::before { width: 16px; height: 16px; }
+.lesson-card > button:hover:not(:disabled) { background: var(--color-accent-600); }
+.lesson-card > button:active:not(:disabled) { background: var(--color-accent-700); }
+.lesson-card > button:disabled {
+  opacity: 1;
+  color: var(--color-neutral-700);
+  background: var(--color-neutral-400);
+}
+.lesson-card > button:disabled::before { display: none; }
+
+/* ── 6. Checkout / cart view ──────────────────────────────────────────── */
+.cart-view {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 80px;
+}
+.cart-view > h2 { margin-bottom: 6px; font-size: 32px; }
+/* the v-for wrapper divs (some are empty) shouldn't take part in the layout */
+.cart-view > div { display: contents; }
+
+.cart-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 4px 16px;
+  max-width: 720px;
+  padding: 18px 22px;
+  background: var(--color-surface);
+  border-radius: 28px;
+}
+.cart-item hr { display: none; }
+/* Order inside .cart-item: h4 subject, p price, p quantity, button */
+.cart-item h4 { grid-column: 1; font-size: 22px; }
+.cart-item p:nth-of-type(1) { grid-column: 1; font-size: 14px; color: var(--color-neutral-700); }
+.cart-item p:nth-of-type(2) {
+  grid-column: 1;
+  justify-self: start;
+  margin-top: 8px;
+  padding: 3px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  background: var(--color-bg);
+  border-radius: 999px;
+}
+.cart-item button {
+  --mask: var(--icon-trash);
+  grid-column: 2;
+  grid-row: 1 / span 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font: 700 13px/1.2 var(--font-body);
+  color: var(--color-accent-700);
+  background: transparent;
+  border: 1px solid var(--color-divider);
+  border-radius: 999px;
+}
+.cart-item button::before { width: 14px; height: 14px; }
+.cart-item button:hover { background: color-mix(in srgb, var(--color-accent) 10%, transparent); }
+.cart-item button:active { background: color-mix(in srgb, var(--color-accent) 18%, transparent); }
+
+/* ── 7. Small screens ─────────────────────────────────────────────────── */
+/* Phones: smaller gutters, tagline hidden, each segmented control full width */
+@media (max-width: 640px) {
+  :root { --gutter: 16px; }
+  header { padding-block: 12px; }
+  .brand-tagline { display: none; }
+  .brand h1 { font-size: 20px; }
+  header button { min-height: 42px; padding: 0 16px; gap: 8px; font-size: 14px; }
+  .toolbar { margin-top: 18px; padding: 12px 14px; }
+  /* label above, each segmented control spans the full toolbar width */
+  .sort-group, .seg { width: 100%; }
+  .seg button { flex: 1; padding: 8px 6px; font-size: 13px; }
+  .catalogue { gap: 16px; }
+}
