@@ -11,73 +11,136 @@
 <body>
     <!-- Vue mounts onto #app (see the script at the bottom of this file) -->
     <div id="app">
-        <!-- HEADER: brand on the left, checkout button on the right.
+        <!-- HEADER (sticky): brand on the left; search box and checkout button on the right.
+             On phones the search drops to its own row under the brand and button.
              The logo mark (two circles) is drawn in styles.css via .brand::before -->
         <header>
-            <div class="brand">
+            <div class="brand" v-on:click="displayCart = false">
                 <h1 v-text="heading"></h1>
                 <span class="brand-tagline">After-school classes &amp; activities</span>
             </div>
-            <!-- Checkout button: disabled while the cart is empty; click swaps catalogue <-> checkout view -->
-            <button v-bind:disabled="numberOfItems === 0 && !displayCart" v-on:click="toggleCart()">
+            <!-- Search: filters the catalogue as you type (see filteredLessons). The magnifier icon and
+                 the clear (x) button are drawn by styles.css. -->
+            <input type="search" v-model="searchTerm" placeholder="Search subject, location, price or spaces" />
+
+            <!-- Checkout button: disabled while the cart is empty (in every view); click swaps
+                 catalogue <-> checkout view. aria-pressed (read-only) lets the CSS show the
+                 "cart is open" ring. -->
+            <button v-bind:disabled="numberOfItems === 0" :aria-pressed="displayCart" v-on:click="toggleCart()">
                 Checkout ({{ numberOfItems }})
             </button>
         </header>
-        
-        <!-- VIEWS: the sort toolbar and the catalogue share one v-if, so the toolbar only shows
-             in the catalogue. <template> adds no element to the page, so the CSS is unaffected.
-             The v-else (checkout view) must stay directly after this </template>. -->
+
+        <!-- VIEWS: the intro, toolbar and catalogue share one v-if, so they only show in the
+             catalogue view. <template> adds no element to the page, so the CSS is unaffected.
+             The v-else (checkout view, class "cart-view") must stay directly after this </template>. -->
         <template v-if="!displayCart">
+            <!-- Intro heading and one-line description (styled by .catalogue-intro) -->
+            <div class="catalogue-intro">
+                <h1>Find their next favourite afternoon.</h1>
+
+                <p>
+                    Classes and activities after the school bell. Every class starts
+                    with 5 spaces.
+                </p>
+            </div>
             <!-- Sorting Begins -->
-            <!-- TOOLBAR: two segmented controls (.seg), both generated with v-for from data().
+            <!-- TOOLBAR (one rounded bar): Sort by, Order, result count and Teacher filter.
+                 The two segmented controls (.seg) are generated with v-for from data().
                  The selected button is marked with aria-pressed="true"; styles.css turns that
-                 into the terracotta "selected" look, so no extra class logic is needed. -->
+                 into the terracotta "selected" look, so no extra class logic is needed.
+                 The CSS puts the result count on the right and the Teacher filter before it. -->
             <div class="toolbar">
-             <!-- Sort by: Subject | Location | Price | Spaces (sets sortAttribute) -->
-             <p class="sort-group">Sort by <span class="seg">
-                <button
-                    v-for="attribute in sortAttributes" 
-                    v-on:click="sortAttribute = attribute.value"
-                    :aria-pressed="sortAttribute === attribute.value"
-                >
-                {{ attribute.label }}
-                </button>
-             </span>
-            </p>
-       
-            <!-- Order: ascending | descending (sets sortOrder) -->
-            <p class="sort-group">Order <span class="seg">
-                <button
-                    v-for="order in sortOrders"
-                    v-on:click="sortOrder = order.value"
-                    :aria-pressed="sortOrder === order.value"
-                >
-                    {{ order.label }}
-                </button>
-             </span>
-            </p>
+                <!-- Sort by: Subject | Location | Price | Spaces (sets sortAttribute) -->
+                <p class="sort-group">
+                    Sort by
+                    <span class="seg">
+                        <button v-for="attribute in sortAttributes" v-on:click="sortAttribute = attribute.value"
+                            :aria-pressed="sortAttribute === attribute.value">
+                            {{ attribute.label }}
+                        </button>
+                    </span>
+                </p>
+
+                <!-- Order: ascending | descending (sets sortOrder) -->
+                <p class="sort-group">
+                    Order
+                    <span class="seg">
+                        <button v-for="order in sortOrders" v-on:click="sortOrder = order.value"
+                            :aria-pressed="sortOrder === order.value">
+                            {{ order.label }}
+                        </button>
+                    </span>
+                </p>
+
+                <!-- Result count: how many lessons match the search and teacher filter -->
+                <span> Showing {{filteredLessons.length}} activities </span>
+
+                <!-- Teacher filter: the <label> wrapper gives the dropdown an accessible name and
+                     lets the CSS place the "Teacher" caption beside it -->
+                <label class="teacher-filter">
+                    Teacher
+                    <select v-model="teacherFilter">
+                        <option value="">All teachers</option>
+                        <option v-for="teacher in teachers" v-bind:value="teacher">
+                            {{teacher}}
+                        </option>
+                    </select>
+                </label>
             </div>
 
             <!-- Sorting Ends here -->
 
-            <!-- VIEW 1 - CATALOGUE (shown while displayCart is false): a responsive grid of lesson cards.
-                 The matching v-else block (the checkout view) must stay directly after this block. -->
-            <div class="catalogue">
+            <!-- NO-RESULTS state: shown instead of the cards when the search / teacher filter match nothing.
+                 This v-if and the v-else catalogue grid below must stay next to each other. -->
+            <div v-if="sortedLessons.length === 0" class="no-results">
+                <h3>Nothing matches yet</h3>
+
+                <p>Try another subject, location, price or number of spaces.</p>
+
+                <button v-on:click="clearFilters()">Clear search & filters</button>
+            </div>
+            <!-- VIEW 1 - CATALOGUE (shown while displayCart is false and something matches): a responsive
+                 grid of lesson cards. This v-else belongs to the no-results v-if above. -->
+            <div v-else class="catalogue">
                 <!-- lessons -->
                 <!-- One card per lesson, in the order given by the sortedLessons computed property.
-                     - class is-low  : exactly 1 space left  (terracotta meter and text)
-                     - class is-full : 0 spaces left         (grey, dimmed image)
-                     - --spaces      : CSS variable read by styles.css to fill the 5-pill spaces meter -->
+                     - class is-low  : exactly 1 space left  (terracotta meter and text, "Last space" badge)
+                     - class is-full : 0 spaces left         (grey meter, dimmed image, "Fully booked" badge)
+                     - --spaces      : CSS variable read by styles.css to fill the 5-pill spaces meter
+                                       and to print the number in the "N spaces" badge -->
+                <!-- Card layout (from styles.css): photo, subject + price, location, teacher + enrolled
+                     count, spaces meter, Add to cart. The HTML order below differs; CSS grid areas
+                     put each line in place. -->
                 <div v-for=" lesson in sortedLessons" class="lesson-card"
                     :class="{ 'is-low': lesson.availability === 1, 'is-full': lesson.availability <= 0 }"
                     :style="{ '--spaces': lesson.availability }">
                     <!-- The <span class="label"> text is visually hidden (kept for screen readers);
-                         styles.css shows the value only, plus a pin icon / "spaces left" text. -->
-                    <p class="lesson-subject"><span class="label">Subject :</span> {{lesson.subject}}</p>
-                    <p class="lesson-location"><span class="label">Location :</span> {{lesson.location}}</p>
-                    <p class="lesson-spaces"><span class="label">Availability :</span> {{lesson.availability}}</p>
-                    <p class="lesson-price"><span class="label">Price :</span> £{{lesson.price}}</p>
-                    <!-- Activity photo: CSS makes it fill the top of the card (4:3, rounded) -->
+                         styles.css shows the value only, plus a pin icon next to the location, a
+                         teacher avatar, a people icon next to "enrolled", and " of 5 spaces left"
+                         after the spaces number. -->
+                    <p class="lesson-subject">
+                        <span class="label">Subject :</span> {{lesson.subject}}
+                    </p>
+                    <p class="lesson-location">
+                        <span class="label">Location :</span> {{lesson.location}}
+                    </p>
+                    <p class="lesson-teacher">
+                        <span class="label">Teacher :</span> {{ lesson.teacher }}
+                    </p>
+                    <p class="lesson-enrolled">
+                        {{ lesson.enrolled }} enrolled
+                    </p>
+
+                    <p class="lesson-spaces">
+                        <span class="label">Availability :</span> {{lesson.availability}}
+                    </p>
+                    <p class="lesson-price">
+                        <span class="label">Price :</span> £{{lesson.price}}
+                    </p>
+                    <!-- Activity photo: CSS makes it fill the top of the card (4:3, rounded, lightly
+                         softened); on phones it becomes a square thumbnail beside the details -->
+
                     <img :src="lesson.image" :alt="lesson.altText" width="300" />
                     <!-- Adds one place to the cart; disabled once no spaces remain -->
                     <button v-on:click="addToCart(lesson)" v-bind:disabled="lesson.availability <= 0">
@@ -86,60 +149,126 @@
                 </div>
             </div>
         </template>
-        
+
         <div v-else class="cart-view">
-
+            <!-- STATE 1: successful order. Everything shown here comes from the lastOrder snapshot that
+                 submitOrder() saves before it clears the cart and the form. -->
             <section v-if="orderSubmitted" class="order-success">
-                <h2>Order confirmed</h2>
+                <div class="success-message">
 
-                <p>Your order has been submitted successfully.</p>
+                    <h2>Order confirmed</h2>
 
-                <button v-on:click="toggleCart()">
-                    Return to activities
-                </button>
-            </section>
+                    <p>
+                        Thanks, {{ lastOrder.name }}.
+                        Your activities have been booked successfully.
+                    </p>
 
-            <template v-else>
-
-                <h2>Checkout</h2>
-
-                <form v-on:submit="submitOrder">
-
-                    <label for="name">Full name</label>
-                    <input id="name" v-model="order.name">
-                    <p>Letters and spaces only</p>
-
-                    <label for="phone">Phone number</label>
-                    <input id="phone" v-model="order.phone">
-                    <p>Digits only</p>
-
-                    <button
-                        type="submit"
-                        v-bind:disabled="!validForm"
-                    >
-                        Place order
+                    <button v-on:click="toggleCart()">
+                        Return to activities
                     </button>
 
-                </form>
-
-                 <!-- Loops over every lesson but only renders those with at least one place in the cart.
-                 The outer v-for div is layout-neutral (display: contents in styles.css). -->
-            <div v-for="lesson in lessons">
-                <div v-if="cartItemCount(lesson.id) > 0" class="cart-item">
-                    
-
-                    <h4 v-text="lesson.subject"></h4>
-
-                    <p>Price: £{{ lesson.price }}</p>
-
-                    <p>Quantity: {{ cartItemCount(lesson.id) }}</p>
-                    <!-- Removes one place and gives that space back to the lesson -->
-                    <button v-on:click="removeFromCart(lesson)">Remove</button>
                 </div>
-            </div>
 
+
+                <div class="order-summary">
+
+                    <div class="order-summary-header">
+                        <h3>Order summary</h3>
+                        <!-- ORDER REFERENCE (not implemented yet): when the backend returns one, add
+                             <span class="order-ref">{{ reference }}</span> here. styles.css already
+                             styles .order-ref as the pill on the right of this heading. -->
+                    </div>
+
+                    <div
+                        v-for="item in lastOrder.items"
+                        class="order-summary-item"
+                    >
+
+                        <h4>{{ item.subject }}</h4>
+
+                        <p>
+                            {{ item.location }} with {{ item.teacher }}
+                        </p>
+
+                        <p>
+                            £{{ item.price }} × {{ item.quantity }}
+                        </p>
+
+                        <p class="order-summary-subtotal">
+                            <span class="cart-label">Subtotal:</span> £{{ item.subtotal }}
+                        </p>
+
+                    </div>
+
+                    <p class="order-summary-total">
+                        <span class="cart-label">Total:</span> £{{ lastOrder.total }}
+                    </p>
+
+                </div>
+
+            </section>
+
+            <!-- Not submitted yet -->
+            <template v-else>
+                <!-- STATE 2: cart is empty (reached by removing the last item; the header button is
+                     disabled at this point, so Back to activities is the way out) -->
+                <section v-if="numberOfItems === 0" class="empty-cart">
+                    <h2>Your cart is empty</h2>
+
+                    <p>Add an activity to continue.</p>
+
+                    <button v-on:click="toggleCart()">Back to activities</button>
+                </section>
+
+                <!-- STATE 3: cart has items -->
+                <template v-else>
+                    <!-- Layout wrappers only. Desktop: cart rows on the left, the checkout card on the
+                         right (sticky). Below 900px the card stacks under the rows (see styles.css). -->
+                    <div class="checkout-layout">
+                        <!-- One row per lesson in the cart. The outer v-for div is layout-neutral
+                             (display: contents in styles.css). -->
+                        <div class="cart-items">
+                            <div v-for="lesson in lessons">
+                                <div v-if="cartItemCount(lesson.id) > 0" class="cart-item">
+                                    <!-- Decorative thumbnail (the subject is already in the heading) -->
+                                    <img :src="lesson.image" alt="" />
+                                    <h4 v-text="lesson.subject"></h4>
+                                    <p class="cart-item-meta">{{lesson.location}} with {{ lesson.teacher }}</p>
+                                    <p class="cart-item-price">Price: £{{ lesson.price }}</p>
+
+                                    <p class="cart-item-qty">Quantity: {{ cartItemCount(lesson.id) }}</p>
+
+                                    <p class="cart-item-subtotal"><span class="cart-label">Subtotal:</span> £{{ lesson.price * cartItemCount(lesson.id) }}</p>
+
+                                    <button v-on:click="removeFromCart(lesson)">Remove</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Checkout card: total, details form and Place order. is-valid / aria-invalid are
+                             read-only bindings on the existing validName / validPhone computed properties:
+                             they only drive the field colours and icons, the validation rules themselves
+                             are unchanged. While Place order is disabled, styles.css shows a hint under it. -->
+                        <form class="checkout-form" v-on:submit="submitOrder">
+                            <h2>Checkout</h2>
+
+                            <label for="name">Full name</label>
+                            <input id="name" v-model="order.name" placeholder="e.g. Amelia Hart"
+                                :class="{ 'is-valid': validName }" :aria-invalid="order.name !== '' && !validName" />
+                            <p>Letters and spaces only</p>
+
+                            <label for="phone">Phone number</label>
+                            <input id="phone" v-model="order.phone" placeholder="e.g. 07123456789"
+                                :class="{ 'is-valid': validPhone }" :aria-invalid="order.phone !== '' && !validPhone" />
+                            <p>Digits only</p>
+                            <p class="checkout-total"><span class="cart-label">Total:</span> £{{ cartTotal }}</p>
+                            <button type="submit" v-bind:disabled="!validForm">
+                                Place order · £{{ cartTotal }}
+                            </button>
+                        </form>
+                    </div>
+                </template>
             </template>
-
         </div>
     </div>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
@@ -150,49 +279,51 @@
             // data(): all of the app's reactive state lives here
             data() {
                 return {
-                    heading: "AfterSchool",       // brand name shown in the header
-                    displayCart: false,           // false = catalogue view, true = checkout view
-                    sortAttribute: "subject",     // lesson property currently sorted on
-                    sortOrder: "ascending",       // "ascending" or "descending"
+                    heading: "AfterSchool", // brand name shown in the header
+                    searchTerm: "", // text in the header search box (v-model)
+                    displayCart: false, // false = catalogue view, true = checkout view
+                    sortAttribute: "subject", // lesson property currently sorted on
+                    sortOrder: "ascending", // "ascending" or "descending"
                     // Options for the "Sort by" buttons (rendered with v-for).
                     // label = text on the button, value = lesson property to sort by
                     sortAttributes: [
-                            {
-                                label: "Subject",
-                                value: "subject"
-                            },
-                            {
-                                label: "Location",
-                                value: "location"
-                            },
-                            {
-                                label: "Price",
-                                value: "price"
-                            },
-                            {
-                                label: "Spaces",
-                                value: "availability"
-                            }
-                        ],
+                        {
+                            label: "Subject",
+                            value: "subject",
+                        },
+                        {
+                            label: "Location",
+                            value: "location",
+                        },
+                        {
+                            label: "Price",
+                            value: "price",
+                        },
+                        {
+                            label: "Spaces",
+                            value: "availability",
+                        },
+                    ],
                     // Options for the "Order" buttons (rendered with v-for)
                     sortOrders: [
                         {
                             label: "↑ A-Z",
-                            value: "ascending"
+                            value: "ascending",
                         },
                         {
                             label: "↓ Z-A",
-                            value: "descending"
-                        }
+                            value: "descending",
+                        },
                     ],
-                    sortTeachers: [],             // reserved for the teacher filter (not used yet)
                     // The lesson catalogue. availability = spaces left (changes as items
                     // are added to / removed from the cart); image paths are relative to index.html
                     lessons: [
                         {
                             id: 1,
                             availability: 5,
+                            enrolled: 0,
                             subject: "Computer Science",
+                            teacher: "Priya Shah",
                             location: "Hendon",
                             price: 100,
                             image: "./images/computer.jpg",
@@ -201,7 +332,9 @@
                         {
                             id: 2,
                             availability: 5,
+                            enrolled: 0,
                             subject: "Music",
+                            teacher: "James Brown",
                             location: "Camden",
                             price: 80,
                             image: "./images/music.jpg",
@@ -210,7 +343,9 @@
                         {
                             id: 3,
                             availability: 5,
+                            enrolled: 0,
                             subject: "Mathematics",
+                            teacher: "Emma Davis",
                             location: "Finchley",
                             price: 90,
                             image: "./images/maths.jpg",
@@ -220,58 +355,111 @@
                     // The cart is a flat list of lesson ids, one entry per place booked
                     // (e.g. [2, 2, 3] = two places on lesson 2 and one on lesson 3)
                     cart: [],
+                    // Options for the Teacher dropdown
+                    teachers: ["Priya Shah", "James Brown", "Emma Davis"],
+                    // What the customer is typing in the checkout form (v-model)
                     order: {
                         name: "",
-                        phone: ""
+                        phone: "",
                     },
-                    orderSubmitted : false,
+                    // Snapshot of the completed order, filled in by submitOrder() before the cart and
+                    // form are cleared; the "Order confirmed" view reads it. items = one entry per lesson
+                    // booked: { subject, teacher, location, price, quantity, subtotal }
+                    lastOrder: {
+                        name: "",
+                        phone: "",
+                        total: 0,
+                        items: []
+                    },
+                    teacherFilter: "", // selected teacher in the dropdown; "" = all teachers
+                    orderSubmitted: false, // true = show the "Order confirmed" view instead of the checkout
                 };
             },
             // computed: values derived from data(); Vue recalculates them automatically
             computed: {
+                // Lessons that match BOTH the search text (subject, location, price or spaces left,
+                // case-insensitive) AND the selected teacher
+                filteredLessons() {
+                    let results = [];
+                    let search = this.searchTerm.toLowerCase();
+
+                    for (let i = 0; i < this.lessons.length; i++) {
+                        let lesson = this.lessons[i];
+
+                        let matchesSearch =
+                            lesson.subject.toLowerCase().includes(search) ||
+                            lesson.location.toLowerCase().includes(search) ||
+                            lesson.price.toString().includes(search) ||
+                            lesson.availability.toString().includes(search);
+
+                        let matchesTeacher =
+                            this.teacherFilter === "" ||
+                            lesson.teacher === this.teacherFilter;
+
+                        if (matchesSearch && matchesTeacher) {
+                            results.push(lesson);
+                        }
+                    }
+
+                    return results;
+                },
+
                 // Total places in the cart; drives the "Checkout (n)" button
                 numberOfItems() {
                     return this.cart.length;
                 },
 
-                // Lessons ordered by sortAttribute / sortOrder; the catalogue v-for renders this.
-                // Note: Array.sort() reorders this.lessons itself rather than a copy.
+                // Sort the filtered lesson results by the selected attribute and order;
+                // the catalogue v-for renders this.
                 sortedLessons() {
-                    let attribute = this.sortAttribute
+                    let attribute = this.sortAttribute;
 
                     if (this.sortOrder === "ascending") {
-
                         // THIS IS THE ASCENDING SORT
                         function compare(a, b) {
                             if (a[attribute] > b[attribute]) return 1;
                             if (a[attribute] < b[attribute]) return -1;
                             return 0;
                         }
-                        return this.lessons.sort(compare)
-                    }
-                    else {
-
+                        return this.filteredLessons.sort(compare);
+                    } else {
                         // THIS IS THE DESCENDING SORT
                         function compare(a, b) {
                             if (a[attribute] < b[attribute]) return 1;
                             if (a[attribute] > b[attribute]) return -1;
                             return 0;
                         }
-                        return this.lessons.sort(compare)
+                        return this.filteredLessons.sort(compare);
+                    }
+                },
+
+                // Name: letters and spaces only; spaces around it are ignored (trim), so a name of only spaces fails
+                validName() {
+                    return /^[A-Za-z ]+$/.test(this.order.name.trim());
+                },
+
+                // Phone: digits only (no length rule)
+                validPhone() {
+                    return /^[0-9]+$/.test(this.order.phone);
+                },
+
+                // Both fields valid: this enables the Place order button
+                validForm() {
+                    return this.validName && this.validPhone;
+                },
+                // Total price of everything in the cart (price x quantity, summed over all lessons)
+                cartTotal(){
+                    let total = 0
+
+                    for(let i = 0; i < this.lessons.length; i++){
+
+                        let lesson = this.lessons[i]
+                        let quantity = this.cartItemCount(lesson.id)
+
+                        total = total + (lesson.price * quantity)
                     }
 
-                },
-
-                validName(){
-                    return /^[A-Za-z ]+$/.test(this.order.name)
-                },
-
-                validPhone(){
-                    return /^[0-9]+$/.test(this.order.phone)
-                },
-
-                validForm(){
-                    return this.validName && this.validPhone
+                    return total
                 }
             },
 
@@ -307,17 +495,49 @@
 
                     return count;
                 },
-                submitOrder(event){
-                    event.preventDefault()
+                // Reset the search box and the teacher dropdown (the "Clear search & filters" button)
+                 clearFilters() {
+                    this.searchTerm = "";
+                    this.teacherFilter = "";
+                },
+                // Place order: stop the page reloading, save the order in lastOrder, add the booked
+                // quantities to each lesson's enrolled count, then empty the cart and the form
+                submitOrder(event) {
+                    event.preventDefault();
 
-                    this.orderSubmitted = true
-                    this.cart = []
-                    this.order.name = ""
-                    this.order.phone = ""
-                }
+                    // Save the completed order before clearing anything
+                    this.lastOrder.name = this.order.name;
+                    this.lastOrder.phone = this.order.phone;
+                    this.lastOrder.total = this.cartTotal;
+                    this.lastOrder.items = [];
+
+                    for(let i = 0; i < this.lessons.length; i++){
+
+                        let lesson = this.lessons[i]
+                        let quantity = this.cartItemCount(lesson.id)
+
+                         if(quantity > 0){
+
+                            this.lastOrder.items.push({
+                                subject: lesson.subject,
+                                teacher: lesson.teacher,
+                                location: lesson.location,
+                                price: lesson.price,
+                                quantity: quantity,
+                                subtotal: lesson.price * quantity
+                            });
+                        }
+
+                        lesson.enrolled = lesson.enrolled + quantity
+                    }
+
+                    this.orderSubmitted = true;
+                    this.cart = [];
+                    this.order.name = "";
+                    this.order.phone = "";
             },
         }
-      );
+    });
         // Attach the app to <div id="app"> in the page
         myApp.mount("#app");
     </script>
