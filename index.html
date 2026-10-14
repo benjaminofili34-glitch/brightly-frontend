@@ -13,15 +13,18 @@
     <div id="app">
         <!-- HEADER (sticky): brand on the left; search box and checkout button on the right.
              On phones the search drops to its own row under the brand and button.
-             The logo mark (two circles) is drawn in styles.css via .brand::before -->
+             The logo mark (two circles) is drawn in styles.css via .brand::before.
+             The brand is a real link (back to the catalogue), so it works with the keyboard too. -->
         <header>
-            <div class="brand" v-on:click="displayCart = false">
+            <a href="#app" class="brand" v-on:click="displayCart = false">
                 <h1 v-text="heading"></h1>
                 <span class="brand-tagline">After-school classes &amp; activities</span>
-            </div>
+            </a>
             <!-- Search: filters the catalogue as you type (see filteredLessons). The magnifier icon and
-                 the clear (x) button are drawn by styles.css. -->
-            <input type="search" v-model="searchTerm" placeholder="Search subject, location, price or spaces" />
+                 the clear (x) button are drawn by styles.css. Hidden in the checkout view (v-show),
+                 where its results would not be visible. -->
+            <input type="search" v-show="!displayCart" v-model="searchTerm" aria-label="Search activities"
+                placeholder="Search subject, location, price or spaces" />
 
             <!-- Checkout button: disabled while the cart is empty (in every view); click swaps
                  catalogue <-> checkout view. aria-pressed (read-only) lets the CSS show the
@@ -74,7 +77,7 @@
                 </p>
 
                 <!-- Result count: how many lessons match the search and teacher filter -->
-                <span> Showing {{filteredLessons.length}} activities </span>
+                <span> Showing {{filteredLessons.length}} {{ filteredLessons.length === 1 ? 'activity' : 'activities' }} </span>
 
                 <!-- Teacher filter: the <label> wrapper gives the dropdown an accessible name and
                      lets the CSS place the "Teacher" caption beside it -->
@@ -96,7 +99,7 @@
             <div v-if="sortedLessons.length === 0" class="no-results">
                 <h3>Nothing matches yet</h3>
 
-                <p>Try another subject, location, price or number of spaces.</p>
+                <p>Try another subject, location, price, number of spaces or teacher.</p>
 
                 <button v-on:click="clearFilters()">Clear search & filters</button>
             </div>
@@ -112,7 +115,7 @@
                 <!-- Card layout (from styles.css): photo, subject + price, location, teacher + enrolled
                      count, spaces meter, Add to cart. The HTML order below differs; CSS grid areas
                      put each line in place. -->
-                <div v-for=" lesson in sortedLessons" class="lesson-card"
+                <div v-for=" lesson in sortedLessons" :key="lesson.id" class="lesson-card"
                     :class="{ 'is-low': lesson.availability === 1, 'is-full': lesson.availability <= 0 }"
                     :style="{ '--spaces': lesson.availability }">
                     <!-- The <span class="label"> text is visually hidden (kept for screen readers);
@@ -307,11 +310,11 @@
                     // Options for the "Order" buttons (rendered with v-for)
                     sortOrders: [
                         {
-                            label: "↑ A-Z",
+                            label: "↑ Ascending",
                             value: "ascending",
                         },
                         {
-                            label: "↓ Z-A",
+                            label: "↓ Descending",
                             value: "descending",
                         },
                     ],
@@ -464,10 +467,10 @@
             // computed: values derived from data(); Vue recalculates them automatically
             computed: {
                 // Lessons that match BOTH the search text (subject, location, price or spaces left,
-                // case-insensitive) AND the selected teacher
+                // case-insensitive, spaces around the text ignored) AND the selected teacher
                 filteredLessons() {
                     let results = [];
-                    let search = this.searchTerm.toLowerCase();
+                    let search = this.searchTerm.trim().toLowerCase();
 
                     for (let i = 0; i < this.lessons.length; i++) {
                         let lesson = this.lessons[i];
@@ -553,9 +556,11 @@
             methods: {
                 // Add one place: record the lesson id in the cart and use up one space
                 addToCart(lesson) {
-                    this.orderSubmitted = false;
-                    this.cart.push(lesson.id);
-                    lesson.availability = lesson.availability - 1;
+                    if (lesson.availability > 0) {
+                        this.orderSubmitted = false;
+                        this.cart.push(lesson.id);
+                        lesson.availability = lesson.availability - 1;
+                    }
                 },
                 // Remove one place: delete one matching id from the cart and give the space back
                 removeFromCart(lesson) {
@@ -565,9 +570,11 @@
                         lesson.availability = lesson.availability + 1;
                     }
                 },
-                // Switch between the catalogue view and the checkout view
+                // Switch between the catalogue view and the checkout view; either view starts at the
+                // top of the page
                 toggleCart() {
                     this.displayCart = !this.displayCart;
+                    window.scrollTo(0, 0);
                 },
                 // How many places of lesson `id` are in the cart (used to group quantities)
                 cartItemCount(id) {
@@ -591,8 +598,8 @@
                 submitOrder(event) {
                     event.preventDefault();
 
-                    // Save the completed order before clearing anything
-                    this.lastOrder.name = this.order.name;
+                    // Save the completed order before clearing anything (name without spaces around it)
+                    this.lastOrder.name = this.order.name.trim();
                     this.lastOrder.phone = this.order.phone;
                     this.lastOrder.total = this.cartTotal;
                     this.lastOrder.items = [];
@@ -618,6 +625,7 @@
                     }
 
                     this.orderSubmitted = true;
+                    window.scrollTo(0, 0); // start the confirmation at the top of the page
                     this.cart = [];
                     this.order.name = "";
                     this.order.phone = "";

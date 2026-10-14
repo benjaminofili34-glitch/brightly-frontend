@@ -208,10 +208,15 @@ header {
   border-bottom: 1px solid var(--color-divider);
 }
 
-/* Brand: two overlapping circles (terracotta + sage) beside the name */
+/* Brand: two overlapping circles (terracotta + sage) beside the name. It is a link (<a>), so the
+   link colour and underline are removed. margin-right: auto keeps the cart button on the right
+   when the search box is hidden (checkout view). */
 .brand {
   cursor: pointer;
   order: 0;
+  margin-right: auto;
+  color: inherit;
+  text-decoration: none;
   display: grid;
   grid-template-columns: 34px auto;
   column-gap: 10px;
@@ -848,7 +853,8 @@ header button:disabled {
     radial-gradient(circle at 48px 54px, var(--color-accent-2) 0 48px, transparent 48px);
 }
 .success-message h2 { font-size: var(--h1-size); text-wrap: balance; }
-.success-message p { font-size: 17px; color: var(--color-neutral-800); }
+/* overflow-wrap: a very long name with no spaces wraps instead of widening the page */
+.success-message p { font-size: 17px; color: var(--color-neutral-800); overflow-wrap: anywhere; }
 .success-message button {
   min-height: 48px;
   padding: 0 24px;
@@ -925,6 +931,8 @@ header button:disabled {
   :root { --gutter: 24px; --h1-size: 36px; }
   header { padding-block: 16px; }
   .catalogue-intro { margin-top: 28px; }
+  /* the toolbar wraps onto two rows here, which would leave the Order divider hanging on its own */
+  .sort-group:nth-of-type(2)::after { display: none; }
 }
 
 /* Phones (under 640px): search on its own row, stacked toolbar, horizontal cards */

@@ -29,19 +29,20 @@ then visit <http://localhost:8765/index.html>.
 | `index.html` | The page: template, Vue app (`data` / `computed` / `methods`) |
 | `styles.css` | All styling (design tokens, layout, components, responsive rules) |
 | `images/` | The 10 lesson photos, one per lesson (see [Image credits](#image-credits)) |
-| `TEST_PLAN.md` | Manual functional test plan (131 tests, including phone/tablet/desktop layout checks) with a Pass/Fail column to fill in. Up to date with the ten-lesson data and the final presentation; the tests have been written but not yet fully executed |
+| `TEST_PLAN.md` | Manual functional test plan (135 tests, including phone/tablet/desktop layout checks) with a Pass/Fail column to fill in. Up to date with the ten-lesson data, the final presentation and the frontend verification fixes; the tests have been written but not yet fully executed |
 
 ## Features (current)
 
 - Lesson catalogue rendered with `v-for`: subject, location, teacher, price, spaces left, enrolled count, photo
-- **Add to cart** — adds one place and reduces the lesson's availability; disabled at 0 spaces
-- Header **Checkout (n)** button shows the cart count and toggles between catalogue and checkout view
-- **Sorting** — by Subject, Location, Price or Spaces, ascending or descending; both control groups are generated with `v-for`. The sort toolbar is shown in the catalogue only and is hidden in the checkout view
-- **Search** (header box) — filters as you type on subject, location, price and spaces, case-insensitively. Teacher names are not searched
-- **Teacher filter** (dropdown in the toolbar) — works together with the search; a "Nothing matches yet" state with a **Clear search & filters** button appears when nothing matches
+- **Add to cart** — adds one place and reduces the lesson's availability; disabled at 0 spaces (and `addToCart()` itself does nothing when no space is left)
+- Header **Checkout (n)** button shows the cart count and toggles between catalogue and checkout view; each switch starts the new view at the top of the page
+- The **AfterSchool** logo is a link back to the catalogue (works with the mouse and the keyboard)
+- **Sorting** — by Subject, Location, Price or Spaces, **↑ Ascending** or **↓ Descending**; both control groups are generated with `v-for`. The sort toolbar is shown in the catalogue only and is hidden in the checkout view
+- **Search** (header box) — filters as you type on subject, location, price and spaces, case-insensitively; spaces around the text are ignored, so a spaces-only search shows everything. Teacher names are not searched. The box is hidden in the checkout view
+- **Teacher filter** (dropdown in the toolbar) — works together with the search; the toolbar shows "Showing 1 activity" / "Showing n activities"; a "Nothing matches yet" state with a **Clear search & filters** button appears when nothing matches
 - **Checkout view** — places grouped by lesson with quantity and subtotal; **Remove** takes one place out and restores one space; running total; an empty-cart state with **Back to activities**
 - **Checkout form** — Full name (letters and spaces only; spaces around the name are ignored when checking, so a spaces-only name is rejected) and Phone number (digits only); **Place order · £total** is enabled only when both are valid. Each field shows an untouched, valid (sage border and tick) or invalid (terracotta border and alert icon) state, and a hint under the button explains why it is disabled
-- **Order confirmation** — submitting shows "Order confirmed" without reloading the page, empties the cart, clears the form, keeps the reduced availability and adds the purchased quantities to each lesson's enrolled count. The completed order is saved first in `lastOrder`, and the confirmation shows the customer's name and an order summary (lessons, teacher and location, price × quantity, subtotals and total)
+- **Order confirmation** — submitting shows "Order confirmed" without reloading the page, empties the cart, clears the form, keeps the reduced availability and adds the purchased quantities to each lesson's enrolled count. The completed order is saved first in `lastOrder` (name trimmed of surrounding spaces), the page scrolls to the top, and the confirmation shows the customer's name and an order summary (lessons, teacher and location, price × quantity, subtotals and total)
 - Responsive layout (see below)
 
 **Not implemented yet:** backend / saving orders (all state is in memory and resets when the page is reloaded), and an order reference (the confirmation has a reserved slot for one — see "How the styling hooks into Vue").
@@ -52,7 +53,7 @@ The interface follows a warm "AfterClass" style: cream background, terracotta fo
 
 | Area | What you see |
 |---|---|
-| Header | Sticky bar: logo mark and name, search box with magnifier and clear (×), cart button (terracotta; outlined and greyed while the cart is empty; ringed while the cart is open) |
+| Header | Sticky bar: logo mark and name (a link back to the catalogue), search box with magnifier and clear (×) (catalogue only), cart button (terracotta; outlined and greyed while the cart is empty; ringed while the cart is open) |
 | Catalogue | Intro heading, a rounded toolbar (Sort by, Order, Teacher, result count), then lesson cards: photo with a spaces badge ("5 spaces" / "Last space" / "Fully booked"), subject and price, location, teacher, enrolled count, five-pill spaces meter (sage, terracotta at the last space, grey when full) and **Add to cart** |
 | No results | Sage magnifier circle, "Nothing matches yet", and a **Clear search & filters** button |
 | Checkout | Cart rows on the left (photo, subject, location and teacher, price, quantity, subtotal, **Remove**) and a sticky checkout card on the right (total, name, phone, **Place order**) |
@@ -61,8 +62,8 @@ The interface follows a warm "AfterClass" style: cream background, terracotta fo
 
 Responsive behaviour:
 
-- **Desktop (1000px and up)** — four-column-capable card grid, checkout in two columns
-- **Tablet (640–999px)** — smaller gutters and headings; checkout and confirmation stack below 900px
+- **Desktop (1000px and up)** — four-column-capable card grid, checkout in two columns; between 1000 and 1199px the toolbar's result count moves to a second line
+- **Tablet (640–999px)** — smaller gutters and headings, no divider in the wrapped toolbar; checkout and confirmation stack below 900px
 - **Phone (under 640px)** — search on its own row, toolbar controls stacked full width, cards become horizontal (square photo, details, meter and a compact **Add to cart**), checkout card stacks under the cart rows
 
 ## The lessons
@@ -117,6 +118,8 @@ The CSS never needs JavaScript. The template exposes state through a few attribu
 | `:class="{ 'is-low': … }"` on a card | Exactly 1 space left: terracotta meter, text and "Last space" badge |
 | `:class="{ 'is-full': … }"` on a card | 0 spaces left: grey meter, dimmed photo, "Fully booked" badge |
 | `:style="{ '--spaces': … }"` on a card | Fills the 5-pill spaces meter and prints the number in the "N spaces" badge |
+| `:key="lesson.id"` on a card | Not a styling hook: ties each card to its lesson so a re-sort moves the card instead of reusing its slot for another lesson |
+| `v-show="!displayCart"` on the search box | Hides the search box in the checkout view; `.brand { margin-right: auto }` keeps the cart button on the right when it is hidden |
 | `<span class="label">` in each card line | Labels ("Subject :" …) are visually hidden but still read by screen readers |
 | `:class="{ 'is-valid': validName }"` / `:aria-invalid="…"` on the form fields | Valid and invalid field colours and icons. They read the existing `validName` / `validPhone`; the validation rules are unchanged |
 | `<label class="teacher-filter">` around the dropdown | Names the dropdown for screen readers and places the "Teacher" caption beside it |
@@ -132,7 +135,8 @@ Colours, fonts and icons are defined once as variables at the top of `styles.css
 - The header button reads "Checkout (n)" rather than "Cart", and the disabled **Add to cart** button keeps its text (the "Fully booked" badge on the photo shows the state).
 - The spaces text assumes five places per lesson ("3 of 5 spaces left"), matching the intro text and the five-pill meter.
 - Validation accepts any number of digits for the phone (no length check; the requirement is digits only). Names with hyphens, apostrophes or accents are rejected. See the OBS tests in `TEST_PLAN.md`.
-- The toolbar says "Showing 1 activities" when exactly one lesson matches.
+- Every switch between the catalogue and the checkout scrolls to the top, so returning to the catalogue does not go back to the card the user was looking at (no scroll position is saved).
+- When sorting by Spaces, adding a place can move that card; keyboard focus is then dropped (the next Tab goes to the first card) rather than moving to a different lesson.
 - `sortedLessons` uses `Array.sort()` on the cached `filteredLessons` array, so lessons with equal values (for example equal spaces) keep whatever order they had before the sort was changed.
 
 ## Image credits
@@ -155,6 +159,8 @@ The seven photos added for lessons 4-10 are from [Unsplash](https://unsplash.com
 
 | Date | Change |
 |---|---|
+| 2026-10-14 | Final verification cleanups. `toggleCart()` now calls `window.scrollTo(0, 0)` on every switch between the catalogue and the checkout (no saved scroll position); the scroll to the top after placing an order is unchanged. `TEST_PLAN.md` updated to the current behaviour (now 135 tests, up from 131): Order labels `↑ Ascending / ↓ Descending`, `Showing 1 activity`, the new no-results text, the trimmed name in VAL-15, the brand link first in PRE-11, no search box in the checkout header (OBS-07, PRE-06, PRE-07) and no toolbar divider at tablet width (PRE-03); new tests SRC-19 (trimmed search), SRC-20 (search hidden in checkout), CRT-12 (view switches start at the top), SUC-12 (confirmation opens at the top), PRE-14 (brand link with mouse and keyboard) and PRE-15 (long unbroken name); OBS-03 and OBS-06 removed because that behaviour was fixed. The changed and new tests and a short smoke run were executed in a browser and passed; the full suite has not been run. |
+| 2026-10-14 | Applied the 14 approved fixes from the exploratory frontend audit. `index.html`: `:key="lesson.id"` on the catalogue cards and an `availability > 0` guard in `addToCart()`; the brand is now an `<a href="#app">` link; the search box has `aria-label="Search activities"`, is hidden in the checkout view (`v-show`) and ignores surrounding spaces (`.trim()`); "Showing 1 activity" singular; Order labels are now "↑ Ascending / ↓ Descending"; the no-results text mentions the teacher; the confirmation stores the trimmed name; opening the checkout and placing an order scroll to the top. `styles.css`: link styling and `margin-right: auto` on `.brand`, `overflow-wrap: anywhere` on the thank-you message, and no Order divider below 1000px. Re-checked the affected scenarios and a smoke run at 1280, 834, 390 and 320px: no overflow, no console errors. `TEST_PLAN.md` has not been updated yet and still expects the old labels and wording (A-Z/Z-A, "1 activities", the old no-results text, OBS-06/OBS-07). |
 | 2026-10-14 | Resized `computer.jpg`, `music.jpg` and `maths.jpg` to 1200px wide (JPEG quality 80, same as the seven added photos): 3.1 MB / 2.1 MB / 2.4 MB down to 82 KB / 97 KB / 54 KB, and the whole `images/` folder from about 8.5 MB to 1.2 MB. Same file names, so no code change. Checked in a browser: all ten photos load at 1200px with no console errors, and the cards, cart thumbnails and photo wash look the same. The originals are still in the git history (and were backed up outside the project before resizing). |
 | 2026-10-14 | Updated `TEST_PLAN.md` for the ten lessons (now 131 tests, up from 122). Reference data and conventions rewritten; every count, sort order, search result, teacher-filter result and total recomputed; new tests for the added lessons' card details and photos (CAT-06, CAT-07), the added teachers (TCH-05, TCH-06, TCH-09, TCH-12), searching the new lessons (SRC-17, SRC-18), booking them (CRT-11, TOT-06) and ordering them (SUC-11). Expected values were computed from the data and checked against the running page; the full suite has not been executed. No application code changed. |
 | 2026-10-14 | Expanded the lessons from 3 to 10 (Art, Football, Swimming, Chess, Drama, Dance, Science added) with seven Unsplash photos saved in `images/`, and the teachers list from 3 to 7. Only the `lessons` and `teachers` data changed; no logic, markup or CSS. Checked in a browser: all photos load, every sort, the teacher filter, search and a multi-lesson order behave correctly, and the layout holds on desktop and phone. `TEST_PLAN.md` was updated for the ten lessons in the next entry. |
