@@ -315,8 +315,9 @@
                             value: "descending",
                         },
                     ],
-                    // The lesson catalogue. availability = spaces left (changes as items
-                    // are added to / removed from the cart); image paths are relative to index.html
+                    // The lesson catalogue (10 lessons). availability = spaces left (changes as items
+                    // are added to / removed from the cart); image paths are relative to index.html.
+                    // Every lesson's teacher must also appear in the teachers list below.
                     lessons: [
                         {
                             id: 1,
@@ -351,12 +352,97 @@
                             image: "./images/maths.jpg",
                             altText: "Mathematics lesson",
                         },
+                        {
+                            id: 4,
+                            availability: 5,
+                            enrolled: 0,
+                            subject: "Art",
+                            teacher: "Lena Fischer",
+                            location: "Highgate",
+                            price: 70,
+                            image: "./images/art.jpg",
+                            altText: "Art lesson",
+                        },
+                        {
+                            id: 5,
+                            availability: 5,
+                            enrolled: 0,
+                            subject: "Football",
+                            teacher: "Tom Whitaker",
+                            location: "Barnet",
+                            price: 60,
+                            image: "./images/football.jpg",
+                            altText: "Football lesson",
+                        },
+                        {
+                            id: 6,
+                            availability: 5,
+                            enrolled: 0,
+                            subject: "Swimming",
+                            teacher: "Tom Whitaker",
+                            location: "Mill Hill",
+                            price: 85,
+                            image: "./images/swimming.jpg",
+                            altText: "Swimming lesson",
+                        },
+                        {
+                            id: 7,
+                            availability: 5,
+                            enrolled: 0,
+                            subject: "Chess",
+                            teacher: "Daniel Reyes",
+                            location: "Edgware",
+                            price: 50,
+                            image: "./images/chess.jpg",
+                            altText: "Chess lesson",
+                        },
+                        {
+                            id: 8,
+                            availability: 5,
+                            enrolled: 0,
+                            subject: "Drama",
+                            teacher: "James Brown",
+                            location: "Golders Green",
+                            price: 75,
+                            image: "./images/drama.jpg",
+                            altText: "Drama lesson",
+                        },
+                        {
+                            id: 9,
+                            availability: 5,
+                            enrolled: 0,
+                            subject: "Dance",
+                            teacher: "Lena Fischer",
+                            location: "Kentish Town",
+                            price: 65,
+                            image: "./images/dance.jpg",
+                            altText: "Dance lesson",
+                        },
+                        {
+                            id: 10,
+                            availability: 5,
+                            enrolled: 0,
+                            subject: "Science",
+                            teacher: "Amara Okafor",
+                            location: "Brent Cross",
+                            price: 95,
+                            image: "./images/science.jpg",
+                            altText: "Science lesson",
+                        },
                     ],
                     // The cart is a flat list of lesson ids, one entry per place booked
                     // (e.g. [2, 2, 3] = two places on lesson 2 and one on lesson 3)
                     cart: [],
-                    // Options for the Teacher dropdown
-                    teachers: ["Priya Shah", "James Brown", "Emma Davis"],
+                    // Options for the Teacher dropdown (one entry per teacher used by the lessons above)
+                    teachers: [
+                        "Priya Shah",
+                        "James Brown",
+                        "Emma Davis",
+                        "Lena Fischer",
+                        "Tom Whitaker",
+                        "Daniel Reyes",
+                        "Amara Okafor",
+                    ],
                     // What the customer is typing in the checkout form (v-model)
                     order: {
                         name: "",

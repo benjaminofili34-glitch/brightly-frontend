@@ -28,8 +28,8 @@ then visit <http://localhost:8765/index.html>.
 |---|---|
 | `index.html` | The page: template, Vue app (`data` / `computed` / `methods`) |
 | `styles.css` | All styling (design tokens, layout, components, responsive rules) |
-| `images/` | Lesson photos (`computer.jpg`, `music.jpg`, `maths.jpg`) |
-| `TEST_PLAN.md` | Manual functional test plan (122 tests, including phone/tablet/desktop layout checks) with a Pass/Fail column to fill in. Up to date with the final presentation; the tests have been written but not yet fully executed |
+| `images/` | The 10 lesson photos, one per lesson (see [Image credits](#image-credits)) |
+| `TEST_PLAN.md` | Manual functional test plan (131 tests, including phone/tablet/desktop layout checks) with a Pass/Fail column to fill in. Up to date with the ten-lesson data and the final presentation; the tests have been written but not yet fully executed |
 
 ## Features (current)
 
@@ -65,6 +65,25 @@ Responsive behaviour:
 - **Tablet (640–999px)** — smaller gutters and headings; checkout and confirmation stack below 900px
 - **Phone (under 640px)** — search on its own row, toolbar controls stacked full width, cards become horizontal (square photo, details, meter and a compact **Add to cart**), checkout card stacks under the cart rows
 
+## The lessons
+
+Ten lessons, each starting with 5 spaces and 0 enrolled. Subjects, prices and locations are all different, so sorting never has ties on those fields.
+
+| # | Subject | Teacher | Location | Price | Photo |
+|---|---|---|---|---|---|
+| 1 | Computer Science | Priya Shah | Hendon | £100 | `computer.jpg` |
+| 2 | Music | James Brown | Camden | £80 | `music.jpg` |
+| 3 | Mathematics | Emma Davis | Finchley | £90 | `maths.jpg` |
+| 4 | Art | Lena Fischer | Highgate | £70 | `art.jpg` |
+| 5 | Football | Tom Whitaker | Barnet | £60 | `football.jpg` |
+| 6 | Swimming | Tom Whitaker | Mill Hill | £85 | `swimming.jpg` |
+| 7 | Chess | Daniel Reyes | Edgware | £50 | `chess.jpg` |
+| 8 | Drama | James Brown | Golders Green | £75 | `drama.jpg` |
+| 9 | Dance | Lena Fischer | Kentish Town | £65 | `dance.jpg` |
+| 10 | Science | Amara Okafor | Brent Cross | £95 | `science.jpg` |
+
+Teachers with more than one lesson: James Brown (Music, Drama), Lena Fischer (Art, Dance) and Tom Whitaker (Football, Swimming).
+
 ## How the Vue app works (`index.html`)
 
 **`data()`**
@@ -78,7 +97,7 @@ Responsive behaviour:
 | `sortAttributes` / `sortOrders` | Option lists that generate the sort buttons |
 | `lessons` | The lesson list (id, subject, teacher, location, price, `availability`, `enrolled`, image); `availability` and `enrolled` change as orders are made |
 | `cart` | Flat list of lesson ids, one entry per place (`[2, 2, 3]` = two places on lesson 2, one on lesson 3) |
-| `teachers` / `teacherFilter` | Options for the teacher dropdown, and the selected teacher (`""` = all) |
+| `teachers` / `teacherFilter` | Options for the teacher dropdown (seven teachers, each teaching at least one lesson), and the selected teacher (`""` = all) |
 | `order` | `{ name, phone }` entered in the checkout form |
 | `lastOrder` | Snapshot of the completed order (`name`, `phone`, `total`, `items`), saved by `submitOrder()` before the cart and form are cleared; the confirmation view reads it |
 | `orderSubmitted` | `true` while the "Order confirmed" view is shown; reset to `false` when a place is added to the cart |
@@ -116,10 +135,29 @@ Colours, fonts and icons are defined once as variables at the top of `styles.css
 - The toolbar says "Showing 1 activities" when exactly one lesson matches.
 - `sortedLessons` uses `Array.sort()` on the cached `filteredLessons` array, so lessons with equal values (for example equal spaces) keep whatever order they had before the sort was changed.
 
+## Image credits
+
+The seven photos added for lessons 4-10 are from [Unsplash](https://unsplash.com) and are used under the [Unsplash License](https://unsplash.com/license) (free to use; credit is appreciated). They were downloaded at 1200px wide.
+
+| File | Photographer | Photo page |
+|---|---|---|
+| `art.jpg` | Anita Jankovic | <https://unsplash.com/photos/5uaZwt3x7nU> |
+| `football.jpg` | Robert Collins | <https://unsplash.com/photos/tvc5imO5pXk> |
+| `swimming.jpg` | Mariusz Smenzyk | <https://unsplash.com/photos/xs9r8fPUats> |
+| `chess.jpg` | Felix Mittermeier | <https://unsplash.com/photos/nAjil1z3eLk> |
+| `drama.jpg` | Kyle Head | <https://unsplash.com/photos/p6rNTdAPbuk> |
+| `dance.jpg` | Astrid Schaffner | <https://unsplash.com/photos/t0gpVFi6UmI> |
+| `science.jpg` | Vitaly Gariev | <https://unsplash.com/photos/UStQpco0TWo> |
+
+`computer.jpg`, `music.jpg` and `maths.jpg` were already part of the project. They have been resized to the same 1200px width as the Unsplash photos (originally 3888-6000px wide and 2-3 MB each; now 54-97 KB each). All ten photos together are about 1.2 MB.
+
 ## Change log
 
 | Date | Change |
 |---|---|
+| 2026-10-14 | Resized `computer.jpg`, `music.jpg` and `maths.jpg` to 1200px wide (JPEG quality 80, same as the seven added photos): 3.1 MB / 2.1 MB / 2.4 MB down to 82 KB / 97 KB / 54 KB, and the whole `images/` folder from about 8.5 MB to 1.2 MB. Same file names, so no code change. Checked in a browser: all ten photos load at 1200px with no console errors, and the cards, cart thumbnails and photo wash look the same. The originals are still in the git history (and were backed up outside the project before resizing). |
+| 2026-10-14 | Updated `TEST_PLAN.md` for the ten lessons (now 131 tests, up from 122). Reference data and conventions rewritten; every count, sort order, search result, teacher-filter result and total recomputed; new tests for the added lessons' card details and photos (CAT-06, CAT-07), the added teachers (TCH-05, TCH-06, TCH-09, TCH-12), searching the new lessons (SRC-17, SRC-18), booking them (CRT-11, TOT-06) and ordering them (SUC-11). Expected values were computed from the data and checked against the running page; the full suite has not been executed. No application code changed. |
+| 2026-10-14 | Expanded the lessons from 3 to 10 (Art, Football, Swimming, Chess, Drama, Dance, Science added) with seven Unsplash photos saved in `images/`, and the teachers list from 3 to 7. Only the `lessons` and `teachers` data changed; no logic, markup or CSS. Checked in a browser: all photos load, every sort, the teacher filter, search and a multi-lesson order behave correctly, and the layout holds on desktop and phone. `TEST_PLAN.md` was updated for the ten lessons in the next entry. |
 | 2026-10-14 | Final presentation pass. `styles.css` rewritten to match the AfterClass design (header with search, intro, rounded toolbar, spaces badge and meter, no-results, two-column checkout, empty cart, order confirmation, tablet and phone layouts). Small presentation-only markup changes in `index.html`: wrappers and classes, a label around the teacher dropdown, a decorative thumbnail in each cart row, placeholders on the form fields, and read-only `aria-pressed` / `aria-invalid` / `is-valid` bindings; the checkout `<form>` moved below the cart rows and the order summary got an `.order-summary-header` with room for a future order reference. No Vue `data`, `computed` or `methods` changed. Checked in a browser at 1280, 834, 700, 390 and 320px. |
 | 2026-10-14 | Updated `TEST_PLAN.md` to the final presentation (now 122 tests): spaces text `N of 5 spaces left` and the photo badges, header button disabled in every empty-cart view, new confirmation wording and order-summary checks, field valid/invalid appearance and the disabled-button hint, Escape/× clearing the search, and a new section of 13 layout checks for desktop, tablet and phone. Refreshed the comments in `index.html` (header, toolbar, no-results/catalogue `v-if`/`v-else`, checkout card, and the data, computed and method notes); comments only, the script logic and the template are unchanged. |
 | 2026-10-14 | Fixed the spaces-only name bug found by the test plan: `validName()` now tests `this.order.name.trim()`, so a name of only spaces is rejected while the stored name is unchanged. Corrected the `sortedLessons` comment (it sorts the filtered results, not `lessons`). Moved the old OBS-04 test to VAL-14 and added VAL-15 (padded names are accepted); the plan now has 102 tests. Checked the four requested cases plus edge cases in a browser. |
