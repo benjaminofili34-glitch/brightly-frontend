@@ -7,29 +7,35 @@ palette with rounded cards and pill-shaped controls.
 > **Maintenance note:** this README is reviewed and updated every time the project is scanned
 > or changed. Update the *Last scanned* line and add an entry to the [Change log](#change-log).
 
-**Last scanned:** 2026-10-14
+**Last scanned:** 2026-10-20
 
 ---
 
 ## Running it
 
-Open `index.html` in a browser (internet needed: Vue and the fonts load from CDNs).
-If the lesson images do not show when opening the file directly, serve the folder instead:
+The app lives in the `frontend/` folder. Open `frontend/index.html` in a browser (internet needed:
+Vue and the fonts load from CDNs). If the lesson images do not show when opening the file directly,
+serve the folder instead:
 
 ```bash
+cd frontend
 python -m http.server 8765
 ```
 
 then visit <http://localhost:8765/index.html>.
 
+**GitHub Pages:** `.github/workflows/static.yml` publishes the `frontend/` folder to GitHub Pages on
+every push to `main` (the repository's Pages source must be set to "GitHub Actions").
+
 ## Project structure
 
 | Path | Purpose |
 |---|---|
-| `index.html` | The page: template, Vue app (`data` / `computed` / `methods`) |
-| `styles.css` | All styling (design tokens, layout, components, responsive rules) |
-| `images/` | The 10 lesson photos, one per lesson (see [Image credits](#image-credits)) |
-| `TEST_PLAN.md` | Manual functional test plan (135 tests, including phone/tablet/desktop layout checks) with a Pass/Fail column to fill in. Up to date with the ten-lesson data, the final presentation and the frontend verification fixes; the tests have been written but not yet fully executed |
+| `frontend/index.html` | The page: template, Vue app (`data` / `computed` / `methods`) |
+| `frontend/styles.css` | All styling (design tokens, layout, components, responsive rules) |
+| `frontend/images/` | The 10 lesson photos, one per lesson (see [Image credits](#image-credits)) |
+| `.github/workflows/static.yml` | Deploys the `frontend/` folder to GitHub Pages |
+| `frontend/TEST_PLAN.md` | Manual functional test plan (135 tests, including phone/tablet/desktop layout checks) with a Pass/Fail column to fill in. Up to date with the ten-lesson data, the final presentation and the frontend verification fixes; the tests have been written but not yet fully executed |
 
 ## Features (current)
 
@@ -159,6 +165,7 @@ The seven photos added for lessons 4-10 are from [Unsplash](https://unsplash.com
 
 | Date | Change |
 |---|---|
+| 2026-10-20 | Moved the app into a `frontend/` folder (`index.html`, `styles.css`, `TEST_PLAN.md` and `images/`; contents unchanged). The GitHub Pages workflow (`.github/workflows/static.yml`, added on GitHub) now uploads `./frontend` instead of the whole repository, so `index.html` is at the root of the published site. Updated the run instructions and the project-structure table for the new paths. |
 | 2026-10-14 | Final verification cleanups. `toggleCart()` now calls `window.scrollTo(0, 0)` on every switch between the catalogue and the checkout (no saved scroll position); the scroll to the top after placing an order is unchanged. `TEST_PLAN.md` updated to the current behaviour (now 135 tests, up from 131): Order labels `↑ Ascending / ↓ Descending`, `Showing 1 activity`, the new no-results text, the trimmed name in VAL-15, the brand link first in PRE-11, no search box in the checkout header (OBS-07, PRE-06, PRE-07) and no toolbar divider at tablet width (PRE-03); new tests SRC-19 (trimmed search), SRC-20 (search hidden in checkout), CRT-12 (view switches start at the top), SUC-12 (confirmation opens at the top), PRE-14 (brand link with mouse and keyboard) and PRE-15 (long unbroken name); OBS-03 and OBS-06 removed because that behaviour was fixed. The changed and new tests and a short smoke run were executed in a browser and passed; the full suite has not been run. |
 | 2026-10-14 | Applied the 14 approved fixes from the exploratory frontend audit. `index.html`: `:key="lesson.id"` on the catalogue cards and an `availability > 0` guard in `addToCart()`; the brand is now an `<a href="#app">` link; the search box has `aria-label="Search activities"`, is hidden in the checkout view (`v-show`) and ignores surrounding spaces (`.trim()`); "Showing 1 activity" singular; Order labels are now "↑ Ascending / ↓ Descending"; the no-results text mentions the teacher; the confirmation stores the trimmed name; opening the checkout and placing an order scroll to the top. `styles.css`: link styling and `margin-right: auto` on `.brand`, `overflow-wrap: anywhere` on the thank-you message, and no Order divider below 1000px. Re-checked the affected scenarios and a smoke run at 1280, 834, 390 and 320px: no overflow, no console errors. `TEST_PLAN.md` has not been updated yet and still expects the old labels and wording (A-Z/Z-A, "1 activities", the old no-results text, OBS-06/OBS-07). |
 | 2026-10-14 | Resized `computer.jpg`, `music.jpg` and `maths.jpg` to 1200px wide (JPEG quality 80, same as the seven added photos): 3.1 MB / 2.1 MB / 2.4 MB down to 82 KB / 97 KB / 54 KB, and the whole `images/` folder from about 8.5 MB to 1.2 MB. Same file names, so no code change. Checked in a browser: all ten photos load at 1200px with no console errors, and the cards, cart thumbnails and photo wash look the same. The originals are still in the git history (and were backed up outside the project before resizing). |
