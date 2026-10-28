@@ -1,13 +1,14 @@
-# AfterSchool — Booking System (CST3144 coursework, frontend)
+# Brightly — After-school Booking System (CST3144 coursework, frontend)
 
 A single-page after-school activities marketplace built with **plain HTML + CSS + Vue 3 (CDN, Options API)**.
-No build step, no router, no extra libraries. The visual style is a warm cream, terracotta and sage
-palette with rounded cards and pill-shaped controls.
+No build step, no router, no extra libraries. The visual style follows the **Brightly** prototype:
+deep green, cream and lime, Manrope headings over DM Sans, white rounded cards, prices in Mauritian
+Rupees (Rs).
 
 > **Maintenance note:** this README is reviewed and updated every time the project is scanned
 > or changed. Update the *Last scanned* line and add an entry to the [Change log](#change-log).
 
-**Last scanned:** 2026-10-20
+**Last scanned:** 2026-10-26
 
 ---
 
@@ -35,19 +36,20 @@ every push to `main` (the repository's Pages source must be set to "GitHub Actio
 | `frontend/styles.css` | All styling (design tokens, layout, components, responsive rules) |
 | `frontend/images/` | The 10 lesson photos, one per lesson (see [Image credits](#image-credits)) |
 | `.github/workflows/static.yml` | Deploys the `frontend/` folder to GitHub Pages |
-| `frontend/TEST_PLAN.md` | Manual functional test plan (135 tests, including phone/tablet/desktop layout checks) with a Pass/Fail column to fill in. Up to date with the ten-lesson data, the final presentation and the frontend verification fixes; the tests have been written but not yet fully executed |
+| `frontend/TEST_PLAN.md` | Manual functional test plan (135 tests) with a Pass/Fail column. **Out of date since the Brightly redesign:** it still expects the old wording and look (`Checkout (n)`, `£`, `Showing n activities`, the spaces badge and pill meter, terracotta/sage colours); the behaviour it tests is unchanged |
+| `backend/` | Express server work in progress (`server.js`, `lesson.js`, `images/`); not used by the frontend yet |
 
 ## Features (current)
 
 - Lesson catalogue rendered with `v-for`: subject, location, teacher, price, spaces left, enrolled count, photo
 - **Add to cart** — adds one place and reduces the lesson's availability; disabled at 0 spaces (and `addToCart()` itself does nothing when no space is left)
-- Header **Checkout (n)** button shows the cart count and toggles between catalogue and checkout view; each switch starts the new view at the top of the page
-- The **AfterSchool** logo is a link back to the catalogue (works with the mouse and the keyboard)
-- **Sorting** — by Subject, Location, Price or Spaces, **↑ Ascending** or **↓ Descending**; both control groups are generated with `v-for`. The sort toolbar is shown in the catalogue only and is hidden in the checkout view
-- **Search** (header box) — filters as you type on subject, location, price and spaces, case-insensitively; spaces around the text are ignored, so a spaces-only search shows everything. Teacher names are not searched. The box is hidden in the checkout view
-- **Teacher filter** (dropdown in the toolbar) — works together with the search; the toolbar shows "Showing 1 activity" / "Showing n activities"; a "Nothing matches yet" state with a **Clear search & filters** button appears when nothing matches
+- Header **Cart (n)** button shows the cart count and toggles between catalogue and checkout view; disabled while the cart is empty; each switch starts the new view at the top of the page
+- The **brightly** logo and the **Explore lessons** link both go back to the catalogue (both set `displayCart = false`, as the logo link already did)
+- **Sorting** — by Subject, Location, Price or Spaces, **↑ Ascending** or **↓ Descending**; both control groups are generated with `v-for`. The controls live in the filter sidebar (catalogue view only)
+- **Search** (hero box) — filters as you type on subject, location, price and spaces, case-insensitively; spaces around the text are ignored, so a spaces-only search shows everything. Teacher names are not searched. The hero (and the box) only appear in the catalogue view
+- **Teacher filter** (dropdown in the sidebar) — works together with the search; the results heading reads "1 lesson to discover" / "n lessons to discover"; a "Nothing matches yet" state with a **Clear search & filters** button appears when nothing matches. **Clear all** in the sidebar calls the same `clearFilters()`
 - **Checkout view** — places grouped by lesson with quantity and subtotal; **Remove** takes one place out and restores one space; running total; an empty-cart state with **Back to activities**
-- **Checkout form** — Full name (letters and spaces only; spaces around the name are ignored when checking, so a spaces-only name is rejected) and Phone number (digits only); **Place order · £total** is enabled only when both are valid. Each field shows an untouched, valid (sage border and tick) or invalid (terracotta border and alert icon) state, and a hint under the button explains why it is disabled
+- **Checkout form** — Full name (letters and spaces only; spaces around the name are ignored when checking, so a spaces-only name is rejected) and Phone number (digits only); **Place order · Rs total** is enabled only when both are valid. Each field shows an untouched, valid (green border and tick) or invalid (red border, red label and alert icon) state, and a hint under the button explains why it is disabled
 - **Order confirmation** — submitting shows "Order confirmed" without reloading the page, empties the cart, clears the form, keeps the reduced availability and adds the purchased quantities to each lesson's enrolled count. The completed order is saved first in `lastOrder` (name trimmed of surrounding spaces), the page scrolls to the top, and the confirmation shows the customer's name and an order summary (lessons, teacher and location, price × quantity, subtotals and total)
 - Responsive layout (see below)
 
@@ -55,22 +57,27 @@ every push to `main` (the repository's Pages source must be set to "GitHub Actio
 
 ## Presentation
 
-The interface follows a warm "AfterClass" style: cream background, terracotta for actions, sage for availability and success, Caprasimo headings over Figtree body text, pill-shaped controls and rounded cards. Every colour, font and icon is a variable at the top of `styles.css`.
+The interface follows the **Brightly** prototype (Figma Make, used as a visual reference only): green `#0f695b` for actions, lime `#cfeb70` accents, a cream hero, white rounded cards, Manrope headings over DM Sans body text. Every colour, font and icon is a variable at the top of `styles.css`.
 
 | Area | What you see |
 |---|---|
-| Header | Sticky bar: logo mark and name (a link back to the catalogue), search box with magnifier and clear (×) (catalogue only), cart button (terracotta; outlined and greyed while the cart is empty; ringed while the cart is open) |
-| Catalogue | Intro heading, a rounded toolbar (Sort by, Order, Teacher, result count), then lesson cards: photo with a spaces badge ("5 spaces" / "Last space" / "Fully booked"), subject and price, location, teacher, enrolled count, five-pill spaces meter (sage, terracotta at the last space, grey when full) and **Add to cart** |
-| No results | Sage magnifier circle, "Nothing matches yet", and a **Clear search & filters** button |
-| Checkout | Cart rows on the left (photo, subject, location and teacher, price, quantity, subtotal, **Remove**) and a sticky checkout card on the right (total, name, phone, **Place order**) |
-| Empty cart | Peach circle with a bag icon, heading, text and **Back to activities** |
-| Order confirmed | Sage tick badge, heading, thank-you message, **Return to activities**, and the order summary card |
+| Header | Sticky white bar: logo (green tile with two lime dots + "brightly"), **Explore lessons** link (green underline while the catalogue is showing), cart button with the count in a green square (faded while the cart is empty; green outline while the cart is open) |
+| Hero | Kicker, "Find an activity they'll *love.*" with a lime underline, description, search box; on the right a framed photo (`art.jpg`) with a smaller overlapping photo (`computer.jpg`) and three chips ("10 activities" from `lessons.length`, "Local educators", "Technology · Arts · Sports") |
+| Catalogue | Left sidebar: Filter lessons + **Clear all**, Sort by and Order as radio-style rows, Teacher dropdown, a booking note. Right: "n lessons to discover" and a 3-column grid of cards: photo, subject and **Rs price / session**, location, teacher, "n spaces left" with a coloured dot (green; amber at 1; red at 0), "n enrolled", **Add to cart** |
+| Fully booked | Dark "Fully booked" overlay on the photo; **Add to cart** stays visible but disabled and grey |
+| No results | Dashed white panel with a magnifier tile, "Nothing matches yet", and a **Clear search & filters** button |
+| Checkout | "Shopping cart" heading; left panel "Your lessons" (n spaces pill, rows with photo, subject, location and teacher, price per session, Qty, subtotal, × remove-one button, order total); right a sticky "Contact details" card (name, phone, privacy note, **Place order · Rs total**) |
+| Empty cart | Dashed panel with a cart tile, heading, text and **Back to activities** |
+| Order confirmed | One centred card: tick tile, "Booking confirmed", "Order confirmed", thank-you message, bordered order summary, **Return to activities** |
+| Footer | Dark green bar: logo, "After-school learning, made simple.", currency note |
 
 Responsive behaviour:
 
-- **Desktop (1000px and up)** — four-column-capable card grid, checkout in two columns; between 1000 and 1199px the toolbar's result count moves to a second line
-- **Tablet (640–999px)** — smaller gutters and headings, no divider in the wrapped toolbar; checkout and confirmation stack below 900px
-- **Phone (under 640px)** — search on its own row, toolbar controls stacked full width, cards become horizontal (square photo, details, meter and a compact **Add to cart**), checkout card stacks under the cart rows
+- **Desktop (over 1100px)** — sidebar + three card columns; checkout in two columns
+- **1100px and below** — two card columns, narrower sidebar and hero photo
+- **Tablet (800px and below)** — hero stacks (photo under the text); the sidebar becomes a white panel above the results with the sort options as pill buttons; checkout stacks
+- **Phone (560px and below)** — 64px header without the nav link or the word "Cart" (count stays); compact hero; one card column; sort pills in an even grid (2 × 2 at 360px and below); compact cart rows
+- **340px and below** — the small hero photo is hidden and the chips shrink. Checked at 320, 375, 390, 768 and 1440px with no horizontal scrolling
 
 ## The lessons
 
@@ -78,16 +85,18 @@ Ten lessons, each starting with 5 spaces and 0 enrolled. Subjects, prices and lo
 
 | # | Subject | Teacher | Location | Price | Photo |
 |---|---|---|---|---|---|
-| 1 | Computer Science | Priya Shah | Hendon | £100 | `computer.jpg` |
-| 2 | Music | James Brown | Camden | £80 | `music.jpg` |
-| 3 | Mathematics | Emma Davis | Finchley | £90 | `maths.jpg` |
-| 4 | Art | Lena Fischer | Highgate | £70 | `art.jpg` |
-| 5 | Football | Tom Whitaker | Barnet | £60 | `football.jpg` |
-| 6 | Swimming | Tom Whitaker | Mill Hill | £85 | `swimming.jpg` |
-| 7 | Chess | Daniel Reyes | Edgware | £50 | `chess.jpg` |
-| 8 | Drama | James Brown | Golders Green | £75 | `drama.jpg` |
-| 9 | Dance | Lena Fischer | Kentish Town | £65 | `dance.jpg` |
-| 10 | Science | Amara Okafor | Brent Cross | £95 | `science.jpg` |
+| 1 | Computer Science | Priya Shah | Hendon | Rs 100 | `computer.jpg` |
+| 2 | Music | James Brown | Camden | Rs 80 | `music.jpg` |
+| 3 | Mathematics | Emma Davis | Finchley | Rs 90 | `maths.jpg` |
+| 4 | Art | Lena Fischer | Highgate | Rs 70 | `art.jpg` |
+| 5 | Football | Tom Whitaker | Barnet | Rs 60 | `football.jpg` |
+| 6 | Swimming | Tom Whitaker | Mill Hill | Rs 85 | `swimming.jpg` |
+| 7 | Chess | Daniel Reyes | Edgware | Rs 50 | `chess.jpg` |
+| 8 | Drama | James Brown | Golders Green | Rs 75 | `drama.jpg` |
+| 9 | Dance | Lena Fischer | Kentish Town | Rs 65 | `dance.jpg` |
+| 10 | Science | Amara Okafor | Brent Cross | Rs 95 | `science.jpg` |
+
+The frontend data is unchanged by the redesign (London locations, small prices); only the currency label changed. The backend's `lesson.js` uses a different, Mauritius-based data set and field names.
 
 Teachers with more than one lesson: James Brown (Music, Drama), Lena Fischer (Art, Dance) and Tom Whitaker (Football, Swimming).
 
@@ -119,27 +128,27 @@ The CSS never needs JavaScript. The template exposes state through a few attribu
 
 | Hook in the HTML | Effect in the CSS |
 |---|---|
-| `:aria-pressed="…"` on sort buttons | Selected button turns terracotta (`[aria-pressed="true"]`) |
-| `:aria-pressed="displayCart"` on the header button | Ring around the cart button while the checkout is open |
-| `:class="{ 'is-low': … }"` on a card | Exactly 1 space left: terracotta meter, text and "Last space" badge |
-| `:class="{ 'is-full': … }"` on a card | 0 spaces left: grey meter, dimmed photo, "Fully booked" badge |
-| `:style="{ '--spaces': … }"` on a card | Fills the 5-pill spaces meter and prints the number in the "N spaces" badge |
+| `:aria-pressed="…"` on sort buttons | Selected option gets the filled green radio dot (desktop) or the solid green pill (tablet/phone) |
+| `:aria-pressed="displayCart"` on the cart button | Green outline on the cart button while the checkout is open |
+| `:aria-current="displayCart ? null : 'page'"` on **Explore lessons** | Green text and underline bar while the catalogue is showing |
+| `:class="{ 'is-low': … }"` on a card | Exactly 1 space left: amber dot and "1 space left" |
+| `:class="{ 'is-full': … }"` on a card | 0 spaces left: red dot, "Fully booked" overlay on the photo; the disabled button turns grey |
+| `:style="{ '--spaces': … }"` on a card | Kept from the previous design; not used for drawing at the moment |
 | `:key="lesson.id"` on a card | Not a styling hook: ties each card to its lesson so a re-sort moves the card instead of reusing its slot for another lesson |
-| `v-show="!displayCart"` on the search box | Hides the search box in the checkout view; `.brand { margin-right: auto }` keeps the cart button on the right when it is hidden |
 | `<span class="label">` in each card line | Labels ("Subject :" …) are visually hidden but still read by screen readers |
-| `:class="{ 'is-valid': validName }"` / `:aria-invalid="…"` on the form fields | Valid and invalid field colours and icons. They read the existing `validName` / `validPhone`; the validation rules are unchanged |
-| `<label class="teacher-filter">` around the dropdown | Names the dropdown for screen readers and places the "Teacher" caption beside it |
-| `.checkout-layout`, `.cart-items` wrappers | Two-column checkout (rows + sticky card), stacked below 900px |
-| `<span class="cart-label">` before amounts | Small "Subtotal:" / "Total:" captions beside the amounts |
+| `:class="{ 'is-valid': validName }"` / `:aria-invalid="…"` on the form fields | Valid and invalid field colours, icons and label colour. They read the existing `validName` / `validPhone`; the validation rules are unchanged |
+| `<label class="teacher-filter">` around the dropdown | Names the dropdown for screen readers |
+| `.catalogue-layout`, `.filters`, `.results` wrappers | Sidebar + results on desktop; sidebar becomes a panel above the results at 800px and below |
+| `.checkout-layout`, `.cart-panel`, `.cart-items` wrappers | Two-column checkout (cart panel + sticky contact card), stacked at 800px and below |
+| `<span class="cart-label">` in totals | "Order total" / "Total" captions beside the amounts |
 | `.order-summary-header` | Heading row of the order summary. **Order reference slot:** when the backend returns a reference, add `<span class="order-ref">…</span>` inside it (a comment marks the spot); `.order-ref` is already styled as the pill on the right |
 
 Colours, fonts and icons are defined once as variables at the top of `styles.css`.
 
 ## Known notes
 
-- Deliberate differences from the original design concept, because they would need new features or logic: no quantity +/- buttons (only **Remove**, one place at a time), no "in cart" tag on cards, no "Back to activities" link above the cart rows (use the header button), no order reference, and teacher avatars show an icon instead of initials. On phones the sort and teacher controls stack in the toolbar instead of opening a sheet.
-- The header button reads "Checkout (n)" rather than "Cart", and the disabled **Add to cart** button keeps its text (the "Fully booked" badge on the photo shows the state).
-- The spaces text assumes five places per lesson ("3 of 5 spaces left"), matching the intro text and the five-pill meter.
+- Deliberate differences from the Brightly prototype, because they would need data or logic the app does not have yet: **no Category filter** and no category pill on the cards (lessons have no `category` field), no age-range line and no schedule/duration line on the cards (no `ageRange` / `schedule` / `durationMinutes` fields), no per-option counts beside the filters, the Teacher filter stays a dropdown (the prototype uses radio rows), no "Back to lessons" link above the cart (use the logo, **Explore lessons** or the cart button), and on tablets/phones the filters show as an inline panel instead of a "Filters & sort" bottom sheet (that needs an open/closed flag in `data()`).
+- The **Remove** button in each cart row is an × icon; its text ("Remove one space") is kept for screen readers.
 - Validation accepts any number of digits for the phone (no length check; the requirement is digits only). Names with hyphens, apostrophes or accents are rejected. See the OBS tests in `TEST_PLAN.md`.
 - Every switch between the catalogue and the checkout scrolls to the top, so returning to the catalogue does not go back to the card the user was looking at (no scroll position is saved).
 - When sorting by Spaces, adding a place can move that card; keyboard focus is then dropped (the next Tab goes to the first card) rather than moving to a different lesson.
@@ -165,6 +174,8 @@ The seven photos added for lessons 4-10 are from [Unsplash](https://unsplash.com
 
 | Date | Change |
 |---|---|
+| 2026-10-26 | **Brightly redesign** (presentation only). `styles.css` rewritten to the Brightly prototype (tokens, header, hero, filter sidebar, cards, cart page, checkout, empty/confirmed states, footer, responsive rules at 1100/800/560/340px). `index.html` template restructured: header with logo mark, **Explore lessons** link and Cart count; new hero with the existing `v-model="searchTerm"` search box (moved from the header) and a photo collage; sort/order/teacher controls moved into a sidebar with a **Clear all** button (calls the existing `clearFilters()`); cards regrouped into photo/body/footer; prices shown as **Rs**; cart rows and totals moved into a "Your lessons" panel; contact form in its own card; static footer. Every existing directive, `v-model`, handler and computed reference was kept. Script change: only `heading` is now `"Brightly"`. Checked in a browser at 1440, 768, 390, 375 and 320px: sorting both ways, search, teacher filter, both clear buttons, no-results, add to cart down to 1 and 0 spaces (button stays visible and disabled), grouped cart, remove one, totals, validation states, disabled Place order, order confirmation, enrolled counts, empty cart; no console errors and no horizontal scrolling. `TEST_PLAN.md` not updated. |
+| 2026-10-26 | Backup commit before the redesign: committed the `lessonId` field in `lastOrder.items`, `.gitignore` for `backend/node_modules`, the `backend/` folder and the root `package.json`, and pushed to GitHub. |
 | 2026-10-20 | Moved the app into a `frontend/` folder (`index.html`, `styles.css`, `TEST_PLAN.md` and `images/`; contents unchanged). The GitHub Pages workflow (`.github/workflows/static.yml`, added on GitHub) now uploads `./frontend` instead of the whole repository, so `index.html` is at the root of the published site. Updated the run instructions and the project-structure table for the new paths. |
 | 2026-10-14 | Final verification cleanups. `toggleCart()` now calls `window.scrollTo(0, 0)` on every switch between the catalogue and the checkout (no saved scroll position); the scroll to the top after placing an order is unchanged. `TEST_PLAN.md` updated to the current behaviour (now 135 tests, up from 131): Order labels `↑ Ascending / ↓ Descending`, `Showing 1 activity`, the new no-results text, the trimmed name in VAL-15, the brand link first in PRE-11, no search box in the checkout header (OBS-07, PRE-06, PRE-07) and no toolbar divider at tablet width (PRE-03); new tests SRC-19 (trimmed search), SRC-20 (search hidden in checkout), CRT-12 (view switches start at the top), SUC-12 (confirmation opens at the top), PRE-14 (brand link with mouse and keyboard) and PRE-15 (long unbroken name); OBS-03 and OBS-06 removed because that behaviour was fixed. The changed and new tests and a short smoke run were executed in a browser and passed; the full suite has not been run. |
 | 2026-10-14 | Applied the 14 approved fixes from the exploratory frontend audit. `index.html`: `:key="lesson.id"` on the catalogue cards and an `availability > 0` guard in `addToCart()`; the brand is now an `<a href="#app">` link; the search box has `aria-label="Search activities"`, is hidden in the checkout view (`v-show`) and ignores surrounding spaces (`.trim()`); "Showing 1 activity" singular; Order labels are now "↑ Ascending / ↓ Descending"; the no-results text mentions the teacher; the confirmation stores the trimmed name; opening the checkout and placing an order scroll to the top. `styles.css`: link styling and `margin-right: auto` on `.brand`, `overflow-wrap: anywhere` on the thank-you message, and no Order divider below 1000px. Re-checked the affected scenarios and a smoke run at 1280, 834, 390 and 320px: no overflow, no console errors. `TEST_PLAN.md` has not been updated yet and still expects the old labels and wording (A-Z/Z-A, "1 activities", the old no-results text, OBS-06/OBS-07). |

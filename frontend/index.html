@@ -4,152 +4,205 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AfterSchool-Booking System</title>
+    <title>Brightly · After-school activities</title>
     <link rel="stylesheet" href="./styles.css" />
 </head>
 
 <body>
     <!-- Vue mounts onto #app (see the script at the bottom of this file) -->
     <div id="app">
-        <!-- HEADER (sticky): brand on the left; search box and checkout button on the right.
-             On phones the search drops to its own row under the brand and button.
-             The logo mark (two circles) is drawn in styles.css via .brand::before.
-             The brand is a real link (back to the catalogue), so it works with the keyboard too. -->
-        <header>
+        <!-- HEADER (sticky): logo on the left, "Explore lessons" link, cart button on the right.
+             The logo mark (green tile with two lime dots) is drawn by styles.css.
+             The brand and "Explore lessons" are real links back to the catalogue, so they work
+             with the keyboard too. -->
+        <header class="site-header">
             <a href="#app" class="brand" v-on:click="displayCart = false">
+                <span class="brand-mark" aria-hidden="true"><span></span></span>
                 <h1 v-text="heading"></h1>
-                <span class="brand-tagline">After-school classes &amp; activities</span>
             </a>
-            <!-- Search: filters the catalogue as you type (see filteredLessons). The magnifier icon and
-                 the clear (x) button are drawn by styles.css. Hidden in the checkout view (v-show),
-                 where its results would not be visible. -->
-            <input type="search" v-show="!displayCart" v-model="searchTerm" aria-label="Search activities"
-                placeholder="Search subject, location, price or spaces" />
 
-            <!-- Checkout button: disabled while the cart is empty (in every view); click swaps
+            <!-- Same action as the brand link: go back to the catalogue. Underlined in green while
+                 the catalogue is showing (aria-current, read-only). Hidden on phones. -->
+            <nav aria-label="Main">
+                <a href="#app" v-on:click="displayCart = false" :aria-current="displayCart ? null : 'page'">
+                    Explore lessons
+                </a>
+            </nav>
+
+            <!-- Cart button: disabled while the cart is empty (in every view); click swaps
                  catalogue <-> checkout view. aria-pressed (read-only) lets the CSS show the
-                 "cart is open" ring. -->
-            <button v-bind:disabled="numberOfItems === 0" :aria-pressed="displayCart" v-on:click="toggleCart()">
-                Checkout ({{ numberOfItems }})
+                 "cart is open" style. The "Cart" word is hidden on phones; the count stays. -->
+            <button class="cart-button" v-bind:disabled="numberOfItems === 0" :aria-pressed="displayCart"
+                v-on:click="toggleCart()">
+                <span class="cart-button-text">Cart</span>
+                <b>{{ numberOfItems }}</b>
             </button>
         </header>
 
-        <!-- VIEWS: the intro, toolbar and catalogue share one v-if, so they only show in the
-             catalogue view. <template> adds no element to the page, so the CSS is unaffected.
+        <!-- VIEWS: the hero, filters and catalogue share one v-if, so they only show in the
+             catalogue view. <template> adds no element to the page.
              The v-else (checkout view, class "cart-view") must stay directly after this </template>. -->
         <template v-if="!displayCart">
-            <!-- Intro heading and one-line description (styled by .catalogue-intro) -->
-            <div class="catalogue-intro">
-                <h1>Find their next favourite afternoon.</h1>
-
-                <p>
-                    Classes and activities after the school bell. Every class starts
-                    with 5 spaces.
-                </p>
-            </div>
-            <!-- Sorting Begins -->
-            <!-- TOOLBAR (one rounded bar): Sort by, Order, result count and Teacher filter.
-                 The two segmented controls (.seg) are generated with v-for from data().
-                 The selected button is marked with aria-pressed="true"; styles.css turns that
-                 into the terracotta "selected" look, so no extra class logic is needed.
-                 The CSS puts the result count on the right and the Teacher filter before it. -->
-            <div class="toolbar">
-                <!-- Sort by: Subject | Location | Price | Spaces (sets sortAttribute) -->
-                <p class="sort-group">
-                    Sort by
-                    <span class="seg">
-                        <button v-for="attribute in sortAttributes" v-on:click="sortAttribute = attribute.value"
-                            :aria-pressed="sortAttribute === attribute.value">
-                            {{ attribute.label }}
-                        </button>
-                    </span>
-                </p>
-
-                <!-- Order: ascending | descending (sets sortOrder) -->
-                <p class="sort-group">
-                    Order
-                    <span class="seg">
-                        <button v-for="order in sortOrders" v-on:click="sortOrder = order.value"
-                            :aria-pressed="sortOrder === order.value">
-                            {{ order.label }}
-                        </button>
-                    </span>
-                </p>
-
-                <!-- Result count: how many lessons match the search and teacher filter -->
-                <span> Showing {{filteredLessons.length}} {{ filteredLessons.length === 1 ? 'activity' : 'activities' }} </span>
-
-                <!-- Teacher filter: the <label> wrapper gives the dropdown an accessible name and
-                     lets the CSS place the "Teacher" caption beside it -->
-                <label class="teacher-filter">
-                    Teacher
-                    <select v-model="teacherFilter">
-                        <option value="">All teachers</option>
-                        <option v-for="teacher in teachers" v-bind:value="teacher">
-                            {{teacher}}
-                        </option>
-                    </select>
-                </label>
-            </div>
-
-            <!-- Sorting Ends here -->
-
-            <!-- NO-RESULTS state: shown instead of the cards when the search / teacher filter match nothing.
-                 This v-if and the v-else catalogue grid below must stay next to each other. -->
-            <div v-if="sortedLessons.length === 0" class="no-results">
-                <h3>Nothing matches yet</h3>
-
-                <p>Try another subject, location, price, number of spaces or teacher.</p>
-
-                <button v-on:click="clearFilters()">Clear search & filters</button>
-            </div>
-            <!-- VIEW 1 - CATALOGUE (shown while displayCart is false and something matches): a responsive
-                 grid of lesson cards. This v-else belongs to the no-results v-if above. -->
-            <div v-else class="catalogue">
-                <!-- lessons -->
-                <!-- One card per lesson, in the order given by the sortedLessons computed property.
-                     - class is-low  : exactly 1 space left  (terracotta meter and text, "Last space" badge)
-                     - class is-full : 0 spaces left         (grey meter, dimmed image, "Fully booked" badge)
-                     - --spaces      : CSS variable read by styles.css to fill the 5-pill spaces meter
-                                       and to print the number in the "N spaces" badge -->
-                <!-- Card layout (from styles.css): photo, subject + price, location, teacher + enrolled
-                     count, spaces meter, Add to cart. The HTML order below differs; CSS grid areas
-                     put each line in place. -->
-                <div v-for=" lesson in sortedLessons" :key="lesson.id" class="lesson-card"
-                    :class="{ 'is-low': lesson.availability === 1, 'is-full': lesson.availability <= 0 }"
-                    :style="{ '--spaces': lesson.availability }">
-                    <!-- The <span class="label"> text is visually hidden (kept for screen readers);
-                         styles.css shows the value only, plus a pin icon next to the location, a
-                         teacher avatar, a people icon next to "enrolled", and " of 5 spaces left"
-                         after the spaces number. -->
-                    <p class="lesson-subject">
-                        <span class="label">Subject :</span> {{lesson.subject}}
-                    </p>
-                    <p class="lesson-location">
-                        <span class="label">Location :</span> {{lesson.location}}
-                    </p>
-                    <p class="lesson-teacher">
-                        <span class="label">Teacher :</span> {{ lesson.teacher }}
-                    </p>
-                    <p class="lesson-enrolled">
-                        {{ lesson.enrolled }} enrolled
+            <!-- HERO: headline, description and the search box on the left; two overlapping
+                 photos with three floating chips on the right (stacks on tablets and phones). -->
+            <section class="hero">
+                <div class="hero-content">
+                    <p class="kicker">Learn beyond the classroom</p>
+                    <h1>Find an activity they’ll <em>love.</em></h1>
+                    <p>
+                        Discover engaging after-school lessons led by passionate local educators
+                        across Mauritius.
                     </p>
 
-                    <p class="lesson-spaces">
-                        <span class="label">Availability :</span> {{lesson.availability}}
-                    </p>
-                    <p class="lesson-price">
-                        <span class="label">Price :</span> £{{lesson.price}}
-                    </p>
-                    <!-- Activity photo: CSS makes it fill the top of the card (4:3, rounded, lightly
-                         softened); on phones it becomes a square thumbnail beside the details -->
-
-                    <img :src="lesson.image" :alt="lesson.altText" width="300" />
-                    <!-- Adds one place to the cart; disabled once no spaces remain -->
-                    <button v-on:click="addToCart(lesson)" v-bind:disabled="lesson.availability <= 0">
-                        Add to cart
-                    </button>
+                    <!-- Search: filters the catalogue as you type (see filteredLessons). The magnifier
+                         icon and the clear (x) button are drawn by styles.css. -->
+                    <div class="search-box">
+                        <input type="search" v-model="searchTerm" aria-label="Search activities"
+                            placeholder="Search by subject, location, price..." />
+                    </div>
                 </div>
+
+                <!-- Decorative photo collage (images are the existing local files) -->
+                <div class="hero-visual">
+                    <img class="hero-photo-main" src="./images/art.jpg"
+                        alt="Child painting with watercolours at an after-school art class" />
+                    <img class="hero-photo-secondary" src="./images/computer.jpg" alt="" />
+                    <span class="hero-chip chip-activities">{{ lessons.length }} activities</span>
+                    <span class="hero-chip chip-teachers">Local educators</span>
+                    <span class="hero-chip chip-categories">Technology · Arts · Sports</span>
+                </div>
+            </section>
+
+            <!-- CATALOGUE LAYOUT: filter sidebar on the left (desktop), results on the right.
+                 Below 800px the sidebar becomes a compact panel above the results. -->
+            <div class="catalogue-layout">
+                <!-- Sorting Begins -->
+                <!-- SIDEBAR: Sort by, Order and Teacher. The sort buttons are generated with v-for from
+                     data(). The selected button is marked with aria-pressed="true"; styles.css turns that
+                     into the filled green radio dot, so no extra class logic is needed. -->
+                <aside class="filters" aria-label="Sort and filter lessons">
+                    <div class="filter-heading">
+                        <h2>Filter lessons</h2>
+                        <!-- Same as the no-results button: clears the search box and the teacher filter -->
+                        <button class="text-button" v-on:click="clearFilters()">Clear all</button>
+                    </div>
+
+                    <!-- Sort by: Subject | Location | Price | Spaces (sets sortAttribute) -->
+                    <div class="filter-group" role="group" aria-labelledby="sort-by-label">
+                        <p class="filter-legend" id="sort-by-label">Sort by</p>
+                        <div class="option-list">
+                            <button v-for="attribute in sortAttributes" v-on:click="sortAttribute = attribute.value"
+                                :aria-pressed="sortAttribute === attribute.value">
+                                {{ attribute.label }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Order: ascending | descending (sets sortOrder) -->
+                    <div class="filter-group" role="group" aria-labelledby="order-label">
+                        <p class="filter-legend" id="order-label">Order</p>
+                        <div class="option-list">
+                            <button v-for="order in sortOrders" v-on:click="sortOrder = order.value"
+                                :aria-pressed="sortOrder === order.value">
+                                {{ order.label }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Teacher filter: the <label> wrapper gives the dropdown an accessible name -->
+                    <label class="teacher-filter">
+                        <span class="filter-legend">Teacher</span>
+                        <select v-model="teacherFilter">
+                            <option value="">All teachers</option>
+                            <option v-for="teacher in teachers" v-bind:value="teacher">
+                                {{teacher}}
+                            </option>
+                        </select>
+                    </label>
+
+                    <!-- Static note (desktop only) -->
+                    <p class="filter-note">
+                        <strong>Simple, flexible booking</strong>
+                        Reserve one or more spaces per lesson.
+                    </p>
+                </aside>
+                <!-- Sorting Ends here -->
+
+                <section class="results">
+                    <!-- Result count: how many lessons match the search and teacher filter -->
+                    <div class="results-toolbar">
+                        <p class="kicker">Explore the collection</p>
+                        <h2>
+                            {{ filteredLessons.length }} {{ filteredLessons.length === 1 ? 'lesson' : 'lessons' }} to discover
+                        </h2>
+                    </div>
+
+                    <!-- NO-RESULTS state: shown instead of the cards when the search / teacher filter match nothing.
+                         This v-if and the v-else catalogue grid below must stay next to each other. -->
+                    <div v-if="sortedLessons.length === 0" class="no-results">
+                        <h3>Nothing matches yet</h3>
+
+                        <p>Try another subject, location, price, number of spaces or teacher.</p>
+
+                        <button v-on:click="clearFilters()">Clear search & filters</button>
+                    </div>
+                    <!-- VIEW 1 - CATALOGUE (shown while displayCart is false and something matches): a responsive
+                         grid of lesson cards. This v-else belongs to the no-results v-if above. -->
+                    <div v-else class="catalogue">
+                        <!-- One card per lesson, in the order given by the sortedLessons computed property.
+                             - class is-low  : exactly 1 space left  (amber "1 space left")
+                             - class is-full : 0 spaces left         ("Fully booked" over the photo, button disabled)
+                             - --spaces      : CSS variable with the number of spaces left (available to styles.css) -->
+                        <article v-for=" lesson in sortedLessons" :key="lesson.id" class="lesson-card"
+                            :class="{ 'is-low': lesson.availability === 1, 'is-full': lesson.availability <= 0 }"
+                            :style="{ '--spaces': lesson.availability }">
+                            <!-- Activity photo (the "Fully booked" overlay is drawn by styles.css) -->
+                            <div class="card-visual">
+                                <img :src="lesson.image" :alt="lesson.altText" width="300" />
+                            </div>
+
+                            <!-- The <span class="label"> text is visually hidden (kept for screen readers);
+                                 styles.css adds the pin and person icons. -->
+                            <div class="card-body">
+                                <div class="card-title-row">
+                                    <h3 class="lesson-subject">
+                                        <span class="label">Subject :</span> {{lesson.subject}}
+                                    </h3>
+                                    <p class="lesson-price">
+                                        <span class="label">Price :</span>
+                                        <strong>Rs {{lesson.price}}</strong>
+                                        <span>/ session</span>
+                                    </p>
+                                </div>
+
+                                <div class="lesson-meta">
+                                    <p class="lesson-location">
+                                        <span class="label">Location :</span> {{lesson.location}}
+                                    </p>
+                                    <p class="lesson-teacher">
+                                        <span class="label">Teacher :</span> {{ lesson.teacher }}
+                                    </p>
+                                </div>
+
+                                <div class="card-footer">
+                                    <div class="capacity">
+                                        <p class="lesson-spaces">
+                                            <span class="label">Availability :</span>
+                                            {{ lesson.availability }} {{ lesson.availability === 1 ? 'space' : 'spaces' }} left
+                                        </p>
+                                        <p class="lesson-enrolled">
+                                            {{ lesson.enrolled }} enrolled
+                                        </p>
+                                    </div>
+                                    <!-- Adds one place to the cart; stays visible but disabled once no spaces remain -->
+                                    <button v-on:click="addToCart(lesson)" v-bind:disabled="lesson.availability <= 0">
+                                        Add to cart
+                                    </button>
+                                </div>
+                            </div>
+                        </article>
+                    </div>
+                </section>
             </div>
         </template>
 
@@ -158,6 +211,7 @@
                  submitOrder() saves before it clears the cart and the form. -->
             <section v-if="orderSubmitted" class="order-success">
                 <div class="success-message">
+                    <p class="kicker">Booking confirmed</p>
 
                     <h2>Order confirmed</h2>
 
@@ -165,13 +219,7 @@
                         Thanks, {{ lastOrder.name }}.
                         Your activities have been booked successfully.
                     </p>
-
-                    <button v-on:click="toggleCart()">
-                        Return to activities
-                    </button>
-
                 </div>
-
 
                 <div class="order-summary">
 
@@ -194,25 +242,36 @@
                         </p>
 
                         <p>
-                            £{{ item.price }} × {{ item.quantity }}
+                            {{ item.quantity }} × Rs {{ item.price }}
                         </p>
 
                         <p class="order-summary-subtotal">
-                            <span class="cart-label">Subtotal:</span> £{{ item.subtotal }}
+                            <span class="label">Subtotal:</span> Rs {{ item.subtotal }}
                         </p>
 
                     </div>
 
                     <p class="order-summary-total">
-                        <span class="cart-label">Total:</span> £{{ lastOrder.total }}
+                        <span class="cart-label">Total</span> Rs {{ lastOrder.total }}
                     </p>
 
                 </div>
+
+                <button v-on:click="toggleCart()">
+                    Return to activities
+                </button>
 
             </section>
 
             <!-- Not submitted yet -->
             <template v-else>
+                <!-- Page heading shared by the empty and filled cart -->
+                <div class="page-heading">
+                    <p class="kicker">Your booking</p>
+                    <h2>Shopping cart</h2>
+                    <p>Review your selected lessons and complete your details.</p>
+                </div>
+
                 <!-- STATE 2: cart is empty (reached by removing the last item; the header button is
                      disabled at this point, so Back to activities is the way out) -->
                 <section v-if="numberOfItems === 0" class="empty-cart">
@@ -225,54 +284,83 @@
 
                 <!-- STATE 3: cart has items -->
                 <template v-else>
-                    <!-- Layout wrappers only. Desktop: cart rows on the left, the checkout card on the
-                         right (sticky). Below 900px the card stacks under the rows (see styles.css). -->
+                    <!-- Layout wrappers only. Desktop: cart panel on the left, the checkout card on the
+                         right (sticky). Below 800px the card stacks under the cart (see styles.css). -->
                     <div class="checkout-layout">
-                        <!-- One row per lesson in the cart. The outer v-for div is layout-neutral
-                             (display: contents in styles.css). -->
-                        <div class="cart-items">
-                            <div v-for="lesson in lessons">
-                                <div v-if="cartItemCount(lesson.id) > 0" class="cart-item">
-                                    <!-- Decorative thumbnail (the subject is already in the heading) -->
-                                    <img :src="lesson.image" alt="" />
-                                    <h4 v-text="lesson.subject"></h4>
-                                    <p class="cart-item-meta">{{lesson.location}} with {{ lesson.teacher }}</p>
-                                    <p class="cart-item-price">Price: £{{ lesson.price }}</p>
+                        <section class="cart-panel">
+                            <div class="panel-title">
+                                <h3>Your lessons</h3>
+                                <span>{{ numberOfItems }} {{ numberOfItems === 1 ? 'space' : 'spaces' }}</span>
+                            </div>
 
-                                    <p class="cart-item-qty">Quantity: {{ cartItemCount(lesson.id) }}</p>
+                            <!-- One row per lesson in the cart. The outer v-for div is layout-neutral
+                                 (display: contents in styles.css). -->
+                            <div class="cart-items">
+                                <div v-for="lesson in lessons">
+                                    <div v-if="cartItemCount(lesson.id) > 0" class="cart-item">
+                                        <!-- Decorative thumbnail (the subject is already in the heading) -->
+                                        <img :src="lesson.image" alt="" />
+                                        <h4 v-text="lesson.subject"></h4>
+                                        <p class="cart-item-meta">{{lesson.location}} with {{ lesson.teacher }}</p>
+                                        <p class="cart-item-price">Rs {{ lesson.price }} per session</p>
 
-                                    <p class="cart-item-subtotal"><span class="cart-label">Subtotal:</span> £{{ lesson.price * cartItemCount(lesson.id) }}</p>
+                                        <p class="cart-item-qty">Qty <strong>{{ cartItemCount(lesson.id) }}</strong></p>
 
-                                    <button v-on:click="removeFromCart(lesson)">Remove</button>
+                                        <p class="cart-item-subtotal"><span class="label">Subtotal:</span> Rs {{ lesson.price * cartItemCount(lesson.id) }}</p>
+
+                                        <!-- Removes one place; shown as an × icon, the text is for screen readers -->
+                                        <button v-on:click="removeFromCart(lesson)"><span class="label">Remove one space</span></button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <!-- Checkout card: total, details form and Place order. is-valid / aria-invalid are
+                            <p class="checkout-total">
+                                <span class="cart-label">Order total <small>One session per reserved space</small></span>
+                                Rs {{ cartTotal }}
+                            </p>
+                        </section>
+
+                        <!-- Checkout card: details form and Place order. is-valid / aria-invalid are
                              read-only bindings on the existing validName / validPhone computed properties:
                              they only drive the field colours and icons, the validation rules themselves
                              are unchanged. While Place order is disabled, styles.css shows a hint under it. -->
                         <form class="checkout-form" v-on:submit="submitOrder">
-                            <h2>Checkout</h2>
+                            <div class="panel-title">
+                                <div>
+                                    <p class="kicker">Checkout</p>
+                                    <h3>Contact details</h3>
+                                </div>
+                                <span>Required</span>
+                            </div>
 
                             <label for="name">Full name</label>
-                            <input id="name" v-model="order.name" placeholder="e.g. Amelia Hart"
+                            <input id="name" v-model="order.name" placeholder="e.g. Maya Patel"
                                 :class="{ 'is-valid': validName }" :aria-invalid="order.name !== '' && !validName" />
                             <p>Letters and spaces only</p>
 
                             <label for="phone">Phone number</label>
-                            <input id="phone" v-model="order.phone" placeholder="e.g. 07123456789"
+                            <input id="phone" v-model="order.phone" placeholder="e.g. 57123456" inputmode="numeric"
                                 :class="{ 'is-valid': validPhone }" :aria-invalid="order.phone !== '' && !validPhone" />
                             <p>Digits only</p>
-                            <p class="checkout-total"><span class="cart-label">Total:</span> £{{ cartTotal }}</p>
+
+                            <p class="secure-note">Your details are only used for this booking.</p>
+
                             <button type="submit" v-bind:disabled="!validForm">
-                                Place order · £{{ cartTotal }}
+                                Place order · Rs {{ cartTotal }}
                             </button>
                         </form>
                     </div>
                 </template>
             </template>
         </div>
+
+        <!-- FOOTER (static) -->
+        <footer class="site-footer">
+            <span class="brand-mark" aria-hidden="true"><span></span></span>
+            <strong class="footer-brand">brightly</strong>
+            <p>After-school learning, made simple.</p>
+            <small>Prices shown in Mauritian Rupees (Rs) per session.</small>
+        </footer>
     </div>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script>
@@ -282,7 +370,7 @@
             // data(): all of the app's reactive state lives here
             data() {
                 return {
-                    heading: "AfterSchool", // brand name shown in the header
+                    heading: "Brightly", // brand name shown in the header
                     searchTerm: "", // text in the header search box (v-model)
                     displayCart: false, // false = catalogue view, true = checkout view
                     sortAttribute: "subject", // lesson property currently sorted on
