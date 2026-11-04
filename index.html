@@ -133,7 +133,8 @@
                     <div class="results-toolbar">
                         <p class="kicker">Explore the collection</p>
                         <h2>
-                            {{ filteredLessons.length }} {{ filteredLessons.length === 1 ? 'lesson' : 'lessons' }} to discover
+                            {{ filteredLessons.length }} {{ filteredLessons.length === 1 ? 'lesson' : 'lessons' }} to
+                            discover
                         </h2>
                     </div>
 
@@ -188,7 +189,8 @@
                                     <div class="capacity">
                                         <p class="lesson-spaces">
                                             <span class="label">Availability :</span>
-                                            {{ lesson.availability }} {{ lesson.availability === 1 ? 'space' : 'spaces' }} left
+                                            {{ lesson.availability }} {{ lesson.availability === 1 ? 'space' : 'spaces'
+                                            }} left
                                         </p>
                                         <p class="lesson-enrolled">
                                             {{ lesson.enrolled }} enrolled
@@ -230,10 +232,7 @@
                              styles .order-ref as the pill on the right of this heading. -->
                     </div>
 
-                    <div
-                        v-for="item in lastOrder.items"
-                        class="order-summary-item"
-                    >
+                    <div v-for="item in lastOrder.items" class="order-summary-item">
 
                         <h4>{{ item.subject }}</h4>
 
@@ -306,16 +305,19 @@
 
                                         <p class="cart-item-qty">Qty <strong>{{ cartItemCount(lesson.id) }}</strong></p>
 
-                                        <p class="cart-item-subtotal"><span class="label">Subtotal:</span> Rs {{ lesson.price * cartItemCount(lesson.id) }}</p>
+                                        <p class="cart-item-subtotal"><span class="label">Subtotal:</span> Rs {{
+                                            lesson.price * cartItemCount(lesson.id) }}</p>
 
                                         <!-- Removes one place; shown as an × icon, the text is for screen readers -->
-                                        <button v-on:click="removeFromCart(lesson)"><span class="label">Remove one space</span></button>
+                                        <button v-on:click="removeFromCart(lesson)"><span class="label">Remove one
+                                                space</span></button>
                                     </div>
                                 </div>
                             </div>
 
                             <p class="checkout-total">
-                                <span class="cart-label">Order total <small>One session per reserved space</small></span>
+                                <span class="cart-label">Order total <small>One session per reserved
+                                        space</small></span>
                                 Rs {{ cartTotal }}
                             </p>
                         </section>
@@ -409,131 +411,12 @@
                     // The lesson catalogue (10 lessons). availability = spaces left (changes as items
                     // are added to / removed from the cart); image paths are relative to index.html.
                     // Every lesson's teacher must also appear in the teachers list below.
-                    lessons: [
-                        {
-                            id: 1,
-                            availability: 5,
-                            enrolled: 0,
-                            subject: "Computer Science",
-                            teacher: "Priya Shah",
-                            location: "Hendon",
-                            price: 100,
-                            image: "./images/computer.jpg",
-                            altText: "Computer Science lesson",
-                        },
-                        {
-                            id: 2,
-                            availability: 5,
-                            enrolled: 0,
-                            subject: "Music",
-                            teacher: "James Brown",
-                            location: "Camden",
-                            price: 80,
-                            image: "./images/music.jpg",
-                            altText: "Music lesson",
-                        },
-                        {
-                            id: 3,
-                            availability: 5,
-                            enrolled: 0,
-                            subject: "Mathematics",
-                            teacher: "Emma Davis",
-                            location: "Finchley",
-                            price: 90,
-                            image: "./images/maths.jpg",
-                            altText: "Mathematics lesson",
-                        },
-                        {
-                            id: 4,
-                            availability: 5,
-                            enrolled: 0,
-                            subject: "Art",
-                            teacher: "Lena Fischer",
-                            location: "Highgate",
-                            price: 70,
-                            image: "./images/art.jpg",
-                            altText: "Art lesson",
-                        },
-                        {
-                            id: 5,
-                            availability: 5,
-                            enrolled: 0,
-                            subject: "Football",
-                            teacher: "Tom Whitaker",
-                            location: "Barnet",
-                            price: 60,
-                            image: "./images/football.jpg",
-                            altText: "Football lesson",
-                        },
-                        {
-                            id: 6,
-                            availability: 5,
-                            enrolled: 0,
-                            subject: "Swimming",
-                            teacher: "Tom Whitaker",
-                            location: "Mill Hill",
-                            price: 85,
-                            image: "./images/swimming.jpg",
-                            altText: "Swimming lesson",
-                        },
-                        {
-                            id: 7,
-                            availability: 5,
-                            enrolled: 0,
-                            subject: "Chess",
-                            teacher: "Daniel Reyes",
-                            location: "Edgware",
-                            price: 50,
-                            image: "./images/chess.jpg",
-                            altText: "Chess lesson",
-                        },
-                        {
-                            id: 8,
-                            availability: 5,
-                            enrolled: 0,
-                            subject: "Drama",
-                            teacher: "James Brown",
-                            location: "Golders Green",
-                            price: 75,
-                            image: "./images/drama.jpg",
-                            altText: "Drama lesson",
-                        },
-                        {
-                            id: 9,
-                            availability: 5,
-                            enrolled: 0,
-                            subject: "Dance",
-                            teacher: "Lena Fischer",
-                            location: "Kentish Town",
-                            price: 65,
-                            image: "./images/dance.jpg",
-                            altText: "Dance lesson",
-                        },
-                        {
-                            id: 10,
-                            availability: 5,
-                            enrolled: 0,
-                            subject: "Science",
-                            teacher: "Amara Okafor",
-                            location: "Brent Cross",
-                            price: 95,
-                            image: "./images/science.jpg",
-                            altText: "Science lesson",
-                        },
-                    ],
+                    lessons: [],
                     // The cart is a flat list of lesson ids, one entry per place booked
                     // (e.g. [2, 2, 3] = two places on lesson 2 and one on lesson 3)
                     cart: [],
                     // Options for the Teacher dropdown (one entry per teacher used by the lessons above)
-                    teachers: [
-                        "Priya Shah",
-                        "James Brown",
-                        "Emma Davis",
-                        "Lena Fischer",
-                        "Tom Whitaker",
-                        "Daniel Reyes",
-                        "Amara Okafor",
-                    ],
+                    teachers: [],
                     // What the customer is typing in the checkout form (v-model)
                     order: {
                         name: "",
@@ -551,6 +434,10 @@
                     teacherFilter: "", // selected teacher in the dropdown; "" = all teachers
                     orderSubmitted: false, // true = show the "Order confirmed" view instead of the checkout
                 };
+            },
+
+            mounted() {
+                this.loadLessons()
             },
             // computed: values derived from data(); Vue recalculates them automatically
             computed: {
@@ -625,10 +512,10 @@
                     return this.validName && this.validPhone;
                 },
                 // Total price of everything in the cart (price x quantity, summed over all lessons)
-                cartTotal(){
+                cartTotal() {
                     let total = 0
 
-                    for(let i = 0; i < this.lessons.length; i++){
+                    for (let i = 0; i < this.lessons.length; i++) {
 
                         let lesson = this.lessons[i]
                         let quantity = this.cartItemCount(lesson.id)
@@ -677,13 +564,13 @@
                     return count;
                 },
                 // Reset the search box and the teacher dropdown (the "Clear search & filters" button)
-                 clearFilters() {
+                clearFilters() {
                     this.searchTerm = "";
                     this.teacherFilter = "";
                 },
                 // Place order: stop the page reloading, save the order in lastOrder, add the booked
                 // quantities to each lesson's enrolled count, then empty the cart and the form
-                submitOrder(event) {
+                async submitOrder(event) {
                     event.preventDefault();
 
                     // Save the completed order before clearing anything (name without spaces around it)
@@ -692,12 +579,12 @@
                     this.lastOrder.total = this.cartTotal;
                     this.lastOrder.items = [];
 
-                    for(let i = 0; i < this.lessons.length; i++){
+                    for (let i = 0; i < this.lessons.length; i++) {
 
                         let lesson = this.lessons[i]
                         let quantity = this.cartItemCount(lesson.id)
 
-                         if(quantity > 0){
+                        if (quantity > 0) {
 
                             this.lastOrder.items.push({
                                 lessonId: lesson.id,
@@ -706,21 +593,62 @@
                                 location: lesson.location,
                                 price: lesson.price,
                                 quantity: quantity,
-                                subtotal: lesson.price * quantity
+                                subtotal: lesson.price * quantity,
                             });
+                            const options = {
+                                method: "PUT",
+                                headers: {
+                                    "Content-Type": "application/json"
+                                },
+                                body: JSON.stringify({ space: lesson.availability })
+                            };
+                            const url = `http://localhost:3000/lessons/${lesson.id}`
+                            const res = await fetch(url, options)
                         }
 
                         lesson.enrolled = lesson.enrolled + quantity
                     }
+                    const options = {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify(this.lastOrder)
+                    };
+                    const url = "http://localhost:3000/orders"
+                    const res = await fetch(url, options)
 
                     this.orderSubmitted = true;
                     window.scrollTo(0, 0); // start the confirmation at the top of the page
                     this.cart = [];
                     this.order.name = "";
                     this.order.phone = "";
-            },
-        }
-    });
+                },
+
+                async loadLessons() {
+                    const response = await fetch('http://localhost:3000/lessons')
+                    const data = await response.json()
+
+                    // Transform the backend data to match the frontend expectations
+                    this.lessons = data.map(lesson => {
+                        return {
+                            ...lesson, // This copies all the existing properties (id, price, location, etc.)
+                            subject: lesson.topic,
+                            availability: lesson.space,
+                            enrolled: lesson.totalSpaces - lesson.space,
+                            teacher: `${lesson.teacher.firstName}  ${lesson.teacher.lastName}`,
+                            image: `http://localhost:3000${lesson.image}`
+                        }
+                    });
+                },
+
+                async searchLessons() {
+                    const response = await fetch(`http://localhost:3000/search?q=${this.searchTerm}`);
+                    const data = await response.json();
+                    // How do we update our local lessons list with this data?
+                }
+            }
+        });
         // Attach the app to <div id="app"> in the page
         myApp.mount("#app");
     </script>
