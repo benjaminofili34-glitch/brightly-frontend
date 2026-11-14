@@ -57,7 +57,7 @@
                     <!-- Search: filters the catalogue as you type (see filteredLessons). The magnifier
                          icon and the clear (x) button are drawn by styles.css. -->
                     <div class="search-box">
-                        <input type="search" v-model="searchTerm" aria-label="Search activities"
+                        <input type="search" v-model="searchTerm" aria-label="Search activities" @input="searchLessons()"
                             placeholder="Search by subject, location, price..." />
                     </div>
                 </div>
@@ -368,6 +368,7 @@
     <script>
         // Vue 3 (CDN build) with the Options API: data / computed / methods.
         const { createApp } = Vue;
+        const API_URL = "https://brightly-backend.onrender.com";
         const myApp = createApp({
             // data(): all of the app's reactive state lives here
             data() {
@@ -602,7 +603,7 @@
                                 },
                                 body: JSON.stringify({ space: lesson.availability })
                             };
-                            const url = `http://localhost:3000/lessons/${lesson.id}`
+                            const url = `${API_URL}/lessons/${lesson.id}`
                             const res = await fetch(url, options)
                         }
 
@@ -615,7 +616,7 @@
                         },
                         body: JSON.stringify(this.lastOrder)
                     };
-                    const url = "http://localhost:3000/orders"
+                    const url = `${API_URL}/orders`
                     const res = await fetch(url, options)
 
                     this.orderSubmitted = true;
@@ -626,7 +627,7 @@
                 },
 
                 async loadLessons() {
-                    const response = await fetch('http://localhost:3000/lessons')
+                    const response = await fetch('${API_URL}/lessons')
                     const data = await response.json()
 
                     // Transform the backend data to match the frontend expectations
@@ -637,15 +638,25 @@
                             availability: lesson.space,
                             enrolled: lesson.totalSpaces - lesson.space,
                             teacher: `${lesson.teacher.firstName}  ${lesson.teacher.lastName}`,
-                            image: `http://localhost:3000${lesson.image}`
-                        }
+                                image: `${API_URL}${lesson.image}`
+                            }
                     });
                 },
 
                 async searchLessons() {
-                    const response = await fetch(`http://localhost:3000/search?q=${this.searchTerm}`);
+                    const response = await fetch(`${API_URL}/search?q=${this.searchTerm}`);
                     const data = await response.json();
-                    // How do we update our local lessons list with this data?
+                    this.lessons = data.map(lesson => {
+                        return {
+                            ...lesson,
+                            subject: lesson.topic,
+                            availability: lesson.space,
+                            enrolled: lesson.totalSpaces - lesson.space,
+                            teacher: `${lesson.teacher.firstName}  ${lesson.teacher.lastName}`,
+                            image: `${API_URL}${lesson.image}`
+                            // How do we update our local lessons list with this data?
+                        }
+                    });
                 }
             }
         });
