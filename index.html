@@ -627,7 +627,7 @@
                 },
 
                 async loadLessons() {
-                    const response = await fetch('${API_URL}/lessons')
+                    const response = await fetch(`${API_URL}/lessons`)
                     const data = await response.json()
 
                     // Transform the backend data to match the frontend expectations
