@@ -138,15 +138,27 @@
                         </h2>
                     </div>
 
+                    <div v-if="loading" class="loading-placeholder">
+                        <div class="loader">
+                            <div class="circle"><div class="dot"></div><div class="outline"></div></div>
+                            <div class="circle"><div class="dot"></div><div class="outline"></div></div>
+                            <div class="circle"><div class="dot"></div><div class="outline"></div></div>
+                            <div class="circle"><div class="dot"></div><div class="outline"></div></div>
+                            <div class="circle"><div class="dot"></div><div class="outline"></div></div>
+                        </div>
+                    </div>
+
                     <!-- NO-RESULTS state: shown instead of the cards when the search / teacher filter match nothing.
                          This v-if and the v-else catalogue grid below must stay next to each other. -->
-                    <div v-if="sortedLessons.length === 0" class="no-results">
+                    <div v-else-if="sortedLessons.length === 0" class="no-results">
                         <h3>Nothing matches yet</h3>
 
                         <p>Try another subject, location, price, number of spaces or teacher.</p>
 
                         <button v-on:click="clearFilters()">Clear search & filters</button>
                     </div>
+
+                    
                     <!-- VIEW 1 - CATALOGUE (shown while displayCart is false and something matches): a responsive
                          grid of lesson cards. This v-else belongs to the no-results v-if above. -->
                     <div v-else class="catalogue">
@@ -347,7 +359,7 @@
 
                             <p class="secure-note">Your details are only used for this booking.</p>
 
-                            <button type="submit" v-bind:disabled="!validForm">
+                            <button type="submit" v-bind:disabled="!validForm || isSubmitting">
                                 Place order · Rs {{ cartTotal }}
                             </button>
                         </form>
@@ -380,6 +392,8 @@
                     sortOrder: "ascending", // "ascending" or "descending"
                     // Options for the "Sort by" buttons (rendered with v-for).
                     // label = text on the button, value = lesson property to sort by
+                    loading: true, // 🔄 Loading state for lessons
+                    isSubmitting: false, // 🔄 Submitting state for the order
                     sortAttributes: [
                         {
                             label: "Subject",
@@ -572,13 +586,15 @@
                 // Place order: stop the page reloading, save the order in lastOrder, add the booked
                 // quantities to each lesson's enrolled count, then empty the cart and the form
                 async submitOrder(event) {
+                    this.isSubmitting = true; // 🔄 Enable submitting state
                     event.preventDefault();
 
-                    // Save the completed order before clearing anything (name without spaces around it)
-                    this.lastOrder.name = this.order.name.trim();
-                    this.lastOrder.phone = this.order.phone;
-                    this.lastOrder.total = this.cartTotal;
-                    this.lastOrder.items = [];
+                    try {
+                        // Save the completed order before clearing anything (name without spaces around it)
+                        this.lastOrder.name = this.order.name.trim();
+                        this.lastOrder.phone = this.order.phone;
+                        this.lastOrder.total = this.cartTotal;
+                        this.lastOrder.items = [];
 
                     for (let i = 0; i < this.lessons.length; i++) {
 
@@ -624,23 +640,35 @@
                     this.cart = [];
                     this.order.name = "";
                     this.order.phone = "";
-                },
+                } catch (error) {
+                        console.error("Error submitting order, Checkout failed:", error);
+                    } finally {
+                    this.isSubmitting = false; // 🔄 Disable submitting state
+                }
+            },
 
                 async loadLessons() {
+                    this.loading = true; // 🔄 Enable loading state
+                    try {
                     const response = await fetch(`${API_URL}/lessons`)
                     const data = await response.json()
 
                     // Transform the backend data to match the frontend expectations
                     this.lessons = data.map(lesson => {
                         return {
-                            ...lesson, // This copies all the existing properties (id, price, location, etc.)
-                            subject: lesson.topic,
-                            availability: lesson.space,
-                            enrolled: lesson.totalSpaces - lesson.space,
-                            teacher: `${lesson.teacher.firstName}  ${lesson.teacher.lastName}`,
+                                ...lesson, // This copies all the existing properties (id, price, location, etc.)
+                                subject: lesson.topic,
+                                availability: lesson.space,
+                                enrolled: lesson.totalSpaces - lesson.space,
+                                teacher: `${lesson.teacher.firstName}  ${lesson.teacher.lastName}`,
                                 image: `${API_URL}${lesson.image}`
                             }
                     });
+                } catch (error) {
+                    console.error("Error loading lessons:", error);
+                } finally {
+                    this.loading = false; // 🔄 Disable loading state
+                }
                 },
 
                 async searchLessons() {
