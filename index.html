@@ -360,7 +360,8 @@
                             <p class="secure-note">Your details are only used for this booking.</p>
 
                             <button type="submit" v-bind:disabled="!validForm || isSubmitting">
-                                Place order · Rs {{ cartTotal }}
+                                <span v-if="isSubmitting">⏳ Processing your order...</span>
+                                <span v-else>Place order · Rs {{ cartTotal }}</span>
                             </button>
                         </form>
                     </div>
@@ -394,6 +395,7 @@
                     // label = text on the button, value = lesson property to sort by
                     loading: true, // 🔄 Loading state for lessons
                     isSubmitting: false, // 🔄 Submitting state for the order
+                    savedOrderId: null, // Stores the order ID returned from the backend after a successful POST
                     sortAttributes: [
                         {
                             label: "Subject",
@@ -585,67 +587,136 @@
                 },
                 // Place order: stop the page reloading, save the order in lastOrder, add the booked
                 // quantities to each lesson's enrolled count, then empty the cart and the form
+  
                 async submitOrder(event) {
-                    this.isSubmitting = true; // 🔄 Enable submitting state
                     event.preventDefault();
 
+                    if (this.isSubmitting || !this.validForm || this.cart.length === 0) {
+                        return;
+                    }
+
+                    this.isSubmitting = true;
+
                     try {
-                        // Save the completed order before clearing anything (name without spaces around it)
-                        this.lastOrder.name = this.order.name.trim();
-                        this.lastOrder.phone = this.order.phone;
-                        this.lastOrder.total = this.cartTotal;
-                        this.lastOrder.items = [];
+                        // STEP 1: Prepare the order
+                        // Only prepare a new order if one hasn't already been saved.
+                        if (!this.savedOrderId) {
+                            this.lastOrder.name = this.order.name.trim();
+                            this.lastOrder.phone = this.order.phone;
+                            this.lastOrder.total = this.cartTotal;
+                            this.lastOrder.items = [];
 
-                    for (let i = 0; i < this.lessons.length; i++) {
+                            for (let i = 0; i < this.lessons.length; i++) {
+                                const lesson = this.lessons[i];
+                                const quantity = this.cartItemCount(lesson.id);
 
-                        let lesson = this.lessons[i]
-                        let quantity = this.cartItemCount(lesson.id)
+                                if (quantity > 0) {
+                                    this.lastOrder.items.push({
+                                        lessonId: lesson.id,
+                                        subject: lesson.subject,
+                                        teacher: lesson.teacher,
+                                        location: lesson.location,
+                                        price: lesson.price,
+                                        quantity: quantity,
+                                        subtotal: lesson.price * quantity
+                                    });
+                                }
+                            }
 
-                        if (quantity > 0) {
-
-                            this.lastOrder.items.push({
-                                lessonId: lesson.id,
-                                subject: lesson.subject,
-                                teacher: lesson.teacher,
-                                location: lesson.location,
-                                price: lesson.price,
-                                quantity: quantity,
-                                subtotal: lesson.price * quantity,
-                            });
-                            const options = {
-                                method: "PUT",
+                            // STEP 2: POST order to MongoDB
+                            const postResponse = await fetch(`${API_URL}/orders`, {
+                                method: "POST",
                                 headers: {
                                     "Content-Type": "application/json"
                                 },
-                                body: JSON.stringify({ space: lesson.availability })
-                            };
-                            const url = `${API_URL}/lessons/${lesson.id}`
-                            const res = await fetch(url, options)
+                                body: JSON.stringify(this.lastOrder)
+                            });
+
+                            // STEP 3: Verify POST was successful
+                            if (!postResponse.ok) {
+                                throw new Error(
+                                    `POST failed: ${postResponse.status}`
+                                );
+                            }
+
+                            const savedOrder = await postResponse.json();
+
+                            if (!savedOrder.orderId) {
+                                throw new Error("Order ID missing from POST response");
+                            }
+
+                            this.savedOrderId = savedOrder.orderId;
+                            console.log("Order saved successfully:", savedOrder);
                         }
 
-                        lesson.enrolled = lesson.enrolled + quantity
-                    }
-                    const options = {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json"
-                        },
-                        body: JSON.stringify(this.lastOrder)
-                    };
-                    const url = `${API_URL}/orders`
-                    const res = await fetch(url, options)
+                        // STEP 4: Update availability for purchased lessons
+                        for (const item of this.lastOrder.items) {
+                            const lesson = this.lessons.find(
+                                lesson => lesson.id === item.lessonId
+                            );
 
-                    this.orderSubmitted = true;
-                    window.scrollTo(0, 0); // start the confirmation at the top of the page
-                    this.cart = [];
-                    this.order.name = "";
-                    this.order.phone = "";
-                } catch (error) {
-                        console.error("Error submitting order, Checkout failed:", error);
+                            if (!lesson) {
+                                throw new Error(`Lesson ${item.lessonId} not found`);
+                            }
+
+                            const putResponse = await fetch(
+                                `${API_URL}/lessons/${lesson.id}`,
+                                {
+                                    method: "PUT",
+                                    headers: {
+                                        "Content-Type": "application/json"
+                                    },
+                                    body: JSON.stringify({
+                                        space: lesson.availability
+                                    })
+                                }
+                            );
+
+                            // STEP 5: Verify each PUT succeeded
+                            if (!putResponse.ok) {
+                                throw new Error(
+                                    `PUT failed for lesson ${lesson.id}: ${putResponse.status}`
+                                );
+                            }
+
+                            console.log(`Availability updated for lesson ${lesson.id}`);
+                        }
+
+                        // All database requests succeeded.
+                        // Update local enrolment counts.
+                        for (const item of this.lastOrder.items) {
+                            const lesson = this.lessons.find(
+                                lesson => lesson.id === item.lessonId
+                            );
+
+                            lesson.enrolled += item.quantity;
+                        }
+
+                        // STEP 6: Clear state and show confirmation
+                        this.orderSubmitted = true;
+                        window.scrollTo(0, 0);
+
+                        this.cart = [];
+                        this.order.name = "";
+                        this.order.phone = "";
+
+                        this.savedOrderId = null;
+
+                        console.log("Checkout completed successfully");
+
+                    } catch (error) {
+                        console.error("Checkout failed:", error);
+
+                        if (this.savedOrderId) {
+                            console.error(
+                                "Order was saved, but availability updates are incomplete."
+                            );
+                        }
+
                     } finally {
-                    this.isSubmitting = false; // 🔄 Disable submitting state
-                }
-            },
+                        this.isSubmitting = false;
+                    }
+                },
 
                 async loadLessons() {
                     this.loading = true; // 🔄 Enable loading state
@@ -661,9 +732,12 @@
                                 availability: lesson.space,
                                 enrolled: lesson.totalSpaces - lesson.space,
                                 teacher: `${lesson.teacher.firstName}  ${lesson.teacher.lastName}`,
-                                image: `${API_URL}${lesson.image}`
+                                image: `${lesson.image.startsWith('http') ? lesson.image : API_URL+lesson.image}`
                             }
                     });
+
+                    // Extract unique teacher names after mapping is complete
+                    this.teachers = [...new Set(this.lessons.map(lesson => lesson.teacher))];
                 } catch (error) {
                     console.error("Error loading lessons:", error);
                 } finally {
@@ -681,7 +755,7 @@
                             availability: lesson.space,
                             enrolled: lesson.totalSpaces - lesson.space,
                             teacher: `${lesson.teacher.firstName}  ${lesson.teacher.lastName}`,
-                            image: `${API_URL}${lesson.image}`
+                            image: `${lesson.image.startsWith('http') ? lesson.image : API_URL+lesson.image}`
                             // How do we update our local lessons list with this data?
                         }
                     });
