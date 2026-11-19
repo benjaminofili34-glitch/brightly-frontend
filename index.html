@@ -58,7 +58,7 @@
                          icon and the clear (x) button are drawn by styles.css. -->
                     <div class="search-box">
                         <input type="search" v-model="searchTerm" aria-label="Search activities" @input="searchLessons()"
-                            placeholder="Search by subject, location, price..." />
+                            placeholder="Search by subject, location, price, spaces or teacher..."
                     </div>
                 </div>
 
@@ -388,6 +388,7 @@
                 return {
                     heading: "Brightly", // brand name shown in the header
                     searchTerm: "", // text in the header search box (v-model)
+                    searchLessonIds: null,
                     displayCart: false, // false = catalogue view, true = checkout view
                     sortAttribute: "subject", // lesson property currently sorted on
                     sortOrder: "ascending", // "ascending" or "descending"
@@ -462,16 +463,13 @@
                 // case-insensitive, spaces around the text ignored) AND the selected teacher
                 filteredLessons() {
                     let results = [];
-                    let search = this.searchTerm.trim().toLowerCase();
 
                     for (let i = 0; i < this.lessons.length; i++) {
                         let lesson = this.lessons[i];
 
-                        let matchesSearch =
-                            lesson.subject.toLowerCase().includes(search) ||
-                            lesson.location.toLowerCase().includes(search) ||
-                            lesson.price.toString().includes(search) ||
-                            lesson.availability.toString().includes(search);
+                       let matchesSearch =
+                            this.searchLessonIds === null ||
+                            this.searchLessonIds.includes(lesson.id);
 
                         let matchesTeacher =
                             this.teacherFilter === "" ||
@@ -584,6 +582,7 @@
                 clearFilters() {
                     this.searchTerm = "";
                     this.teacherFilter = "";
+                    this.searchLessonIds = null;
                 },
                 // Place order: stop the page reloading, save the order in lastOrder, add the booked
                 // quantities to each lesson's enrolled count, then empty the cart and the form
@@ -745,21 +744,38 @@
                 }
                 },
 
-                async searchLessons() {
-                    const response = await fetch(`${API_URL}/search?q=${this.searchTerm}`);
-                    const data = await response.json();
-                    this.lessons = data.map(lesson => {
-                        return {
-                            ...lesson,
-                            subject: lesson.topic,
-                            availability: lesson.space,
-                            enrolled: lesson.totalSpaces - lesson.space,
-                            teacher: `${lesson.teacher.firstName}  ${lesson.teacher.lastName}`,
-                            image: `${lesson.image.startsWith('http') ? lesson.image : API_URL+lesson.image}`
-                            // How do we update our local lessons list with this data?
-                        }
-                    });
-                }
+                
+async searchLessons() {
+    const query = this.searchTerm.trim();
+
+    if (!query) {
+        this.searchLessonIds = null;
+        return;
+    }
+
+    try {
+        const response = await fetch(
+            `${API_URL}/search?q=${encodeURIComponent(query)}`
+        );
+
+        if (!response.ok) {
+            throw new Error(`Search failed: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        // Ignore results if the user has changed the search.
+        if (query !== this.searchTerm.trim()) {
+            return;
+        }
+
+        this.searchLessonIds = data.map(lesson => lesson.id);
+
+    } catch (error) {
+        console.error("Error searching lessons:", error);
+    }
+}
+
             }
         });
         // Attach the app to <div id="app"> in the page
